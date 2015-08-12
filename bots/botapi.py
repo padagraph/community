@@ -19,6 +19,20 @@ class Botapi:
         return requests.post(url, data=json.dumps(payload), headers=self.headers)
         
         
+    def _post_type(self, obj_type, gid, name, properties):
+        print "posting %s" % obj_type , name
+        url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
+        payload = { '%s' % obj_type: name,
+                    'properties': properties
+                   }
+        return requests.post(url, data=json.dumps(payload), headers=self.headers)
+
+    def post_node_type(self, gid, name, properties):
+        return self._post_type( "node_type", gid, name, properties )
+
+    def post_edge_type(self, gid, name, properties):
+        return self._post_type( "edge_type", gid, name, properties )
+        
     def post_node(self, gid, payload):
         url = "%s/graphs/g/%s/node?token=%s" % (self.host, gid, self.key)
         return requests.post(url, data=json.dumps(payload), headers=self.headers)

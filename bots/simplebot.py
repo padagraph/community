@@ -24,13 +24,16 @@ def main():
     graph = graph.subgraph( [  v[0] for v in vs[:100]] )
     print graph.summary()
 
-    return
     gid =  args.gid 
 
     botapi = Botapi(args.host, args.key)
 
     # create empty graph
     botapi.create_graph(gid, "no description")
+    r = botapi.post_node_type(gid, "word", { "desc": "no description"})
+    assert r.json().get('uuid')
+    r = botapi.post_edge_type(gid, "is_syn", { })
+    assert r.json().get('uuid')
     
     # post nodes
     idx = {}
@@ -42,7 +45,7 @@ def main():
         r = botapi.post_node(gid, payload)
         resp = r.json()
         idx[v['label']] = resp['uuid'] 
-        print v['label'], r.status_code, resp['uuid'] 
+        print v['label'], r.status_code, resp['uuid']
         
     # post edges
     for e in graph.es:
@@ -51,18 +54,18 @@ def main():
         label = "is_syn"
         
         payload = {
-            'edge_type': 'syn',
+            'edge_type': 'is_syn',
             'label': label,
             'source': idx[src],
             'target': idx[tgt],
         }
-        print payload
+        #print payload
         r = botapi.post_edge(gid, payload)
         print "%s [ %s -- %s --> %s ] " % (r.status_code, src, label , tgt )
 
-    # save if needed
-    print "saving"
-    botapi.save()
+    ## save if needed
+    #print "saving"
+    #botapi.save()
     
 if __name__ == '__main__':
     sys.exit(main())
