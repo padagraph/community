@@ -10,10 +10,12 @@ def main():
     """ re-Index all the Proxteam corpus """
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("--host", action='store', help="path", default="http://localhost:5000")
+    parser.add_argument("--host", action='store', help="host", default="http://localhost:5000")
     parser.add_argument("--key" , action='store', help="key", default=None)
+    parser.add_argument("--username" , action='store', help="user", default=None)
+    parser.add_argument("--password" , action='store', help="pwd", default=None)
     parser.add_argument("--path", action='store', help="path", default=None)
-    parser.add_argument("--gid", action='store', help="path", default=None)
+    parser.add_argument("--gid", action='store', help="graph id", default=None)
 
     args = parser.parse_args()
     
@@ -27,6 +29,8 @@ def main():
     gid =  args.gid 
 
     botapi = Botapi(args.host, args.key)
+    if args.username and args.password:
+        botapi.authenticate(args.username, args.password)
 
     # create empty graph
     botapi.create_graph(gid, "no description")

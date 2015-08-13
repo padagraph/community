@@ -7,9 +7,22 @@ import json
 
 class Botapi:
     headers={'Content-Type': 'application/json'}
+    
     def __init__(self, host, key):
         self.host = host
         self.key = key
+
+    def authenticate(self, username, password):
+        self.username = username
+        self.password = password
+        url = "%s/auth/authenticate" % (self.host)
+        payload = { 'username':username, 'password':password }
+        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+        resp = resp.json()
+
+        self.key = resp.get('token')
+        
+        return self.key is not None
 
     def create_graph(self, gid, desc=""):
         url = "%s/graphs/create?token=%s" % (self.host,self.key)
@@ -20,7 +33,6 @@ class Botapi:
         
         
     def _post_type(self, obj_type, gid, name, properties):
-        print "posting %s" % obj_type , name
         url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
         payload = { '%s' % obj_type: name,
                     'properties': properties
