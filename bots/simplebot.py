@@ -4,7 +4,17 @@ import sys
 import argparse
 import igraph
 
-from botapi import Botapi
+
+from botapi import PadaBot
+
+
+def gen_nodes(graph):
+    for v in graph.vs:
+        payload = {
+                    'node_type': 'word',
+                    'name': v['label']
+                }
+        yield payload
 
 def main():
     """ re-Index all the Proxteam corpus """
@@ -28,7 +38,7 @@ def main():
 
     gid =  args.gid 
 
-    botapi = Botapi(args.host, args.key)
+    botapi = PadaBot(args.host, args.key)
     if args.username and args.password:
         botapi.authenticate(args.username, args.password)
 
@@ -41,16 +51,10 @@ def main():
     
     # post nodes
     idx = {}
-    for v in graph.vs:
-        payload = {
-                    'node_type': 'word',
-                    'name': v['label']
-                }
-        r = botapi.post_node(gid, payload)
-        resp = r.json()
-        idx[v['label']] = resp['uuid'] 
-        print v['label'], r.status_code, resp['uuid']
-        
+
+    for res in botapi.post_nodes( gid, gen_nodes(graph) ):
+        idx[res['node']] = res['uuid'] 
+    
     # post edges
     for e in graph.es:
         src = graph.vs[e.source]['label']

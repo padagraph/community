@@ -2,10 +2,22 @@
 
 import requests
 import json
-
+from itertools import islice
 """ simple botapi to post graph """
 
-class Botapi:
+class BotError(Exception):
+    pass
+class BotLoginError(Exception):
+    pass
+
+def slice(gen, chunksize):
+    while True:    
+        chunks = list(islice(gen, chunksize))
+        if chunks == []:
+            break
+        yield chunks
+
+class PadaBot:
     headers={'Content-Type': 'application/json'}
     
     def __init__(self, host, key):
@@ -23,9 +35,9 @@ class Botapi:
         if 200 == resp.status_code:
             resp = resp.json()  
             self.key = resp.get('token')
-        
-        if self.key is None:
-            raise ValueError('Login error')
+            return self.key is not None
+            
+        raise BotLoginError('Login error %s' % self.username)
 
     def create_graph(self, gid, desc=""):
         url = "%s/graphs/create?token=%s" % (self.host,self.key)
@@ -51,6 +63,19 @@ class Botapi:
     def post_node(self, gid, payload):
         url = "%s/graphs/g/%s/node?token=%s" % (self.host, gid, self.key)
         return requests.post(url, data=json.dumps(payload), headers=self.headers)
+         
+    def post_nodes(self, gid, nodes ):
+        url = "%s/graphs/g/%s/nodes?token=%s" % (self.host, gid, self.key)
+        for chunks in slice(nodes, 100):
+            payload = { "nodes":chunks }
+            resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+
+            if resp.status_code != 200:
+                raise  BotError("%s" % resp.status_code)
+
+            data = resp.json()
+            for v in data['results']:
+                yield v
          
     def post_edge(self, gid, payload):
         url = "%s/graphs/g/%s/edge?token=%s" % (self.host, gid, self.key)
