@@ -68,10 +68,9 @@ def main():
               'target': Inidict[i]} for (i, gsr), sinos in Matrix.iteritems()]
     #for e in edges:
     #    print e
-    #    bot.post_edges('Old Chinese', e)
-    print bot.post_edges
-    print bot.post_edges.__code__
-    bot.post_edges('Old Chinese', edges)
+    #    bot.post_edge('Old Chinese', e)
+    for _ in bot.post_edges('Old Chinese', iter(edges)):
+        pass
 
 
 if __name__ == '__main__':
