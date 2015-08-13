@@ -5,7 +5,7 @@ import argparse
 import igraph
 
 
-from botapi import PadaBot
+from botapi import Botagraph
 
 
 def gen_nodes(graph):
@@ -14,6 +14,20 @@ def gen_nodes(graph):
                     'node_type': 'word',
                     'name': v['label']
                 }
+        yield payload
+
+def gen_edges(graph, idx):
+    for e in graph.es:
+        src = graph.vs[e.source]['label']
+        tgt = graph.vs[e.target]['label']
+        label = "is_syn"
+        
+        payload = {
+            'edge_type': 'is_syn',
+            'label': label,
+            'source': idx[src],
+            'target': idx[tgt],
+        }
         yield payload
 
 def main():
@@ -29,6 +43,11 @@ def main():
 
     args = parser.parse_args()
     
+    bot = Botagraph(args.host, args.key)
+
+    if args.username and args.password:
+        bot.authenticate(args.username, args.password)
+
     graph = igraph.read(args.path)
     print graph.summary()
     
@@ -38,42 +57,25 @@ def main():
 
     gid =  args.gid 
 
-    botapi = PadaBot(args.host, args.key)
-    if args.username and args.password:
-        botapi.authenticate(args.username, args.password)
 
     # create empty graph
-    botapi.create_graph(gid, "no description")
-    r = botapi.post_node_type(gid, "word", { "desc": "no description"})
+    bot.create_graph(gid, "no description")
+    r = bot.post_node_type(gid, "word", { "desc": "no description"})
     assert r.json().get('uuid')
-    r = botapi.post_edge_type(gid, "is_syn", { })
+    r = bot.post_edge_type(gid, "is_syn", { })
     assert r.json().get('uuid')
     
-    # post nodes
     idx = {}
 
-    for res in botapi.post_nodes( gid, gen_nodes(graph) ):
+    # post nodes
+    for res in bot.post_nodes( gid, gen_nodes(graph) ):
         idx[res['node']] = res['uuid'] 
-    
-    # post edges
-    for e in graph.es:
-        src = graph.vs[e.source]['label']
-        tgt = graph.vs[e.target]['label']
-        label = "is_syn"
-        
-        payload = {
-            'edge_type': 'is_syn',
-            'label': label,
-            'source': idx[src],
-            'target': idx[tgt],
-        }
-        #print payload
-        r = botapi.post_edge(gid, payload)
-        print "%s [ %s -- %s --> %s ] " % (r.status_code, src, label , tgt )
 
-    ## save if needed
-    #print "saving"
-    #botapi.save()
+    inv_idx = { v:k for k,v in idx.iteritems() }
+    # post edges
+    for res in bot.post_edges( gid, gen_edges(graph, idx) ):
+        print "%s [ %s -- %s --> %s ] " % ( res['uuid'], inv_idx[res['source']] , "syn", inv_idx[res['target']] )
+
     
 if __name__ == '__main__':
     sys.exit(main())
