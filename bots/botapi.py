@@ -100,6 +100,7 @@ class Botagraph:
             yield v
 
     def post_edges(self, gid, edges ):
+        print 'adding edges in', gid
         for v in self._post_multi("edges", gid, edges ):
             yield v
 
