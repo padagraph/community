@@ -13,16 +13,19 @@ class Botapi:
         self.key = key
 
     def authenticate(self, username, password):
+        self.key = None
         self.username = username
         self.password = password
         url = "%s/auth/authenticate" % (self.host)
         payload = { 'username':username, 'password':password }
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
-        resp = resp.json()
 
-        self.key = resp.get('token')
+        if 200 == resp.status_code:
+            resp = resp.json()  
+            self.key = resp.get('token')
         
-        return self.key is not None
+        if self.key is None:
+            raise ValueError('Login error')
 
     def create_graph(self, gid, desc=""):
         url = "%s/graphs/create?token=%s" % (self.host,self.key)
