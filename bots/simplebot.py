@@ -12,7 +12,7 @@ def gen_nodes(graph):
     for v in graph.vs:
         payload = {
                     'node_type': 'word',
-                    'name': v['label']
+                    'label': v['label']
                 }
         yield payload
 
@@ -60,10 +60,8 @@ def main():
 
     # create empty graph
     bot.create_graph(gid, "no description")
-    r = bot.post_node_type(gid, "word", { "desc": "no description"})
-    assert r.json().get('uuid')
-    r = bot.post_edge_type(gid, "is_syn", { })
-    assert r.json().get('uuid')
+    bot.post_node_type(gid, "word", { "desc": "no description"})
+    bot.post_edge_type(gid, "is_syn", { })
     
     idx = {}
 

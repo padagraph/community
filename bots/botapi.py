@@ -10,7 +10,7 @@ class BotError(Exception):
 class BotLoginError(Exception):
     pass
 
-def slice(gen, chunksize):
+def gen_slice(gen, chunksize):
     while True:    
         chunks = list(islice(gen, chunksize))
         if chunks == []:
@@ -35,41 +35,56 @@ class Botagraph:
         if 200 == resp.status_code:
             resp = resp.json()  
             self.key = resp.get('token')
-            if self.key is None:
-                raise BotLoginError("I miss a valid authentification token user:'%s'" % self.username)
+
+
+        if self.key is None:
+            raise BotLoginError("I miss a valid authentification token user:'%s'" % self.username)
+
+        print "Authentification OK %s " % self.key
+            
 
     def create_graph(self, gid, desc=""):
         url = "%s/graphs/create?token=%s" % (self.host,self.key)
         payload = { "name": gid,
                     "desc": desc
                 }
-        return requests.post(url, data=json.dumps(payload), headers=self.headers)
-        
+        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+        if resp.status_code is not 200:
+            raise BotError('Something is wrong, got response code %s' % resp.status_code)
+
     def _post_one(self, obj_type, gid, payload):
         url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
-        return requests.post(url, data=json.dumps(payload), headers=self.headers)
+        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+        
+        if resp.status_code is not 200:
+            raise BotError('Something is wrong, got response code %s \n %s' % (resp.status_code, resp.text) )
 
+        return resp.json()
+        
     def post_node_type(self, gid, name, properties):
         payload = { 'node_type': name,
                     'properties': properties
                    }
-        return self._post_one( "node_type", gid, payload )
-
-    def post_node(self, gid, payload):
-        return self._post_one( "node", gid, payload )
-         
+        resp = self._post_one( "node_type", gid, payload )
+        return resp['uuid']
+        
     def post_edge_type(self, gid, name, properties):
         payload = { 'edge_type' : name,
                     'properties': properties
                    }
-        return self._post_one( "edge_type", gid, payload )
+        resp = self._post_one( "edge_type", gid, payload )
         
+        return resp['uuid']
+        
+    def post_node(self, gid, payload):
+        return self._post_one( "node", gid, payload )
+         
     def post_edge(self, gid, payload):
         return self._post_one( "edge", gid, payload )
         
     def _post_multi(self, obj_type, gid, objs ):
         url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
-        for chunks in slice(objs, 100):
+        for chunks in gen_slice(objs, 100):
             payload = { "%s" % obj_type:chunks }
             resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
 
@@ -87,10 +102,5 @@ class Botagraph:
     def post_edges(self, gid, edges ):
         for v in self._post_multi("edges", gid, edges ):
             yield v
-
-    def save(self):
-        """ save the current data   """
-        url = "%s/graphs/save?token=%s" % (self.host, self.key)
-        return requests.get(url, headers=self.headers)
 
       
