@@ -5,14 +5,15 @@ import argparse
 import igraph
 
 
-from botapi import Botagraph
+from botapi import Botagraph, BotApiError
 
 
 def gen_nodes(graph):
     for v in graph.vs:
         payload = {
                     'node_type': 'word',
-                    'label': v['label']
+                    'label': v['label'],
+                    'lang':'fr'
                 }
         yield payload
 
@@ -42,35 +43,46 @@ def main():
     parser.add_argument("--gid", action='store', help="graph id", default=None)
 
     args = parser.parse_args()
-    
+
+
+    # Bot creation & login 
     bot = Botagraph(args.host, args.key)
 
     if args.username and args.password:
         bot.authenticate(args.username, args.password)
 
+    # read / parse graph
     graph = igraph.read(args.path)
-    print graph.summary()
-    
+
     vs =  sorted( [ (v.index, v.degree() ) for v in  graph.vs ], key=lambda x: x[1], reverse = True )
     graph = graph.subgraph( [  v[0] for v in vs[:100]] )
     print graph.summary()
 
-    gid =  args.gid 
-
-
     # create empty graph
+    gid =  args.gid
+
+    print "create graph %s" % gid
     bot.create_graph(gid, "no description")
+    print "create node type %s" % "word"
     bot.post_node_type(gid, "word", { "desc": "no description"})
+    print "create edge type %s" % "is_syn"
     bot.post_edge_type(gid, "is_syn", { })
     
     idx = {}
 
-    # post nodes
+    
+    print "posting nodes"
     for res in bot.post_nodes( gid, gen_nodes(graph) ):
-        idx[res['node']] = res['uuid'] 
+        idx[res['node']] = res['uuid']
+        print res['node'], res['uuid'] 
 
-    inv_idx = { v:k for k,v in idx.iteritems() }
+    
+    print "iterate over nodes"
+    for node in bot.find_all_nodes(gid, "word", {}):
+        print node
+
     # post edges
+    inv_idx = { v:k for k,v in idx.iteritems() }
     for res in bot.post_edges( gid, gen_edges(graph, idx) ):
         print "%s [ %s -- %s --> %s ] " % ( res['uuid'], inv_idx[res['source']] , "syn", inv_idx[res['target']] )
 

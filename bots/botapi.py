@@ -7,7 +7,16 @@ from itertools import islice
 
 class BotError(Exception):
     pass
-class BotLoginError(Exception):
+    
+class BotApiError(BotError):
+    def __init__(self, response):
+        """ Function doc
+        :param : 
+        """
+        self.message ='Something is wrong, got response code %s' % response.status_code
+        self.json = response.json()
+        
+class BotLoginError(BotError):
     pass
 
 def gen_slice(gen, chunksize):
@@ -32,10 +41,10 @@ class Botagraph:
         payload = { 'username':username, 'password':password }
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
 
+        print url, payload, resp.text
         if 200 == resp.status_code:
             resp = resp.json()  
             self.key = resp.get('token')
-
 
         if self.key is None:
             raise BotLoginError("I miss a valid authentification token user:'%s'" % self.username)
@@ -50,16 +59,29 @@ class Botagraph:
                 }
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
         if resp.status_code is not 200:
-            raise BotError('Something is wrong, got response code %s' % resp.status_code)
+            raise BotApiError(resp)
 
     def _post_one(self, obj_type, gid, payload):
         url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
         
         if resp.status_code is not 200:
-            raise BotError('Something is wrong, got response code %s \n %s' % (resp.status_code, resp.text) )
+            raise BotError(resp)
 
         return resp.json()
+
+    def _post_multi(self, obj_type, gid, objs ):
+        url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
+        for chunks in gen_slice(objs, 100):
+            payload = { "%s" % obj_type: chunks }
+            resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+
+            if resp.status_code != 200:
+                raise BotApiError(resp)
+
+            data = resp.json()
+            for v in data['results']:
+                yield v
         
     def post_node_type(self, gid, name, properties):
         payload = { 'node_type': name,
@@ -82,18 +104,6 @@ class Botagraph:
     def post_edge(self, gid, payload):
         return self._post_one( "edge", gid, payload )
         
-    def _post_multi(self, obj_type, gid, objs ):
-        url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
-        for chunks in gen_slice(objs, 100):
-            payload = { "%s" % obj_type:chunks }
-            resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
-
-            if resp.status_code != 200:
-                raise  BotError("%s" % resp.status_code)
-
-            data = resp.json()
-            for v in data['results']:
-                yield v
 
     def post_nodes(self, gid, nodes ):
         for v in self._post_multi("nodes", gid, nodes ):
@@ -103,4 +113,34 @@ class Botagraph:
         for v in self._post_multi("edges", gid, edges ):
             yield v
 
-      
+    def find_all_nodes(self, graph_name, nodetype_name, properties):
+        start=0
+        size=100
+        while True:
+            nodes = list( self.find_nodes(graph_name, nodetype_name, properties, start, size))
+            if not len(nodes) :
+                break
+            start += size
+            for node in nodes:
+                yield node
+            
+    def find_nodes(self, graph_name, nodetype_name, properties, start=0, size=100):
+        """ Function doc
+        :param : 
+        """
+        url = "%s/graphs/g/%s/find_nodes?token=%s" % (self.host, graph_name, self.key)
+        payload = {
+                "start": start,
+                "size" : size,
+                "node_type" : nodetype_name,
+                "properties" : properties
+        }
+        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+
+        if resp.status_code != 200:
+            raise BotApiError(resp)
+
+        data = resp.json()
+        for v in data['nodes']:
+            yield v
+        
