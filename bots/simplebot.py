@@ -12,8 +12,10 @@ def gen_nodes(graph):
     for v in graph.vs:
         payload = {
                     'node_type': 'word',
-                    'label': v['label'],
-                    'lang':'fr'
+                    'properties': { 
+                        'label': v['label'],
+                        'lang':'fr'
+                    }
                 }
         yield payload
 
@@ -25,11 +27,22 @@ def gen_edges(graph, idx):
         
         payload = {
             'edge_type': 'is_syn',
-            'label': label,
             'source': idx[src],
             'target': idx[tgt],
+            'properties':{
+                'label': label,
+            }
         }
         yield payload
+
+    yield  {
+            'edge_type': 'is_syn',
+            'source': "mhldhfl",
+            'target': "zjelahzrl",
+            'properties':{
+                'label': label,
+            }
+        }
 
 def main():
     """ re-Index all the Proxteam corpus """
@@ -55,36 +68,53 @@ def main():
     graph = igraph.read(args.path)
 
     vs =  sorted( [ (v.index, v.degree() ) for v in  graph.vs ], key=lambda x: x[1], reverse = True )
-    graph = graph.subgraph( [  v[0] for v in vs[:100]] )
+    graph = graph.subgraph( [  v[0] for v in vs[:]] )
     print graph.summary()
 
     # create empty graph
     gid =  args.gid
 
-    print "create graph %s" % gid
-    bot.create_graph(gid, "no description")
-    print "create node type %s" % "word"
-    bot.post_node_type(gid, "word", { "desc": "no description"})
-    print "create edge type %s" % "is_syn"
-    bot.post_edge_type(gid, "is_syn", { })
+
+    if not bot.has_graph(gid) :
+        print "create graph %s" % gid
+        bot.create_graph(gid, "no description")
+        print "create node type %s" % "word"
+        bot.post_node_type(gid, "word", { "desc": "no description"})
+        print "create edge type %s" % "is_syn"
+        bot.post_edge_type(gid, "is_syn", { })
+
+    print "Get schema '%s'" % gid
+    print bot.get_schema(gid)
     
     idx = {}
-
     
     print "posting nodes"
-    for res in bot.post_nodes( gid, gen_nodes(graph) ):
-        idx[res['node']] = res['uuid']
-        print res['node'], res['uuid'] 
+    count = 0
+    for node, uuid in bot.post_nodes( gid, gen_nodes(graph) ):
+        idx[node['properties']['label']] = uuid
+        count += 1
+        #print ">>> ", node['properties']['label'], uuid 
+    print "%s nodes inserted " % count
 
     
-    print "iterate over nodes"
-    for node in bot.find_all_nodes(gid, "word", {}):
-        print node
+    #print "iterate over nodes"
+    #for node in bot.find_all_nodes(gid, "word", {}):
+        #pass#print node
 
     # post edges
+    print "posting edges"
+    count = 0
+    fail = 0
+
     inv_idx = { v:k for k,v in idx.iteritems() }
-    for res in bot.post_edges( gid, gen_edges(graph, idx) ):
-        print "%s [ %s -- %s --> %s ] " % ( res['uuid'], inv_idx[res['source']] , "syn", inv_idx[res['target']] )
+    
+    for obj, uuid in bot.post_edges( gid, gen_edges(graph, idx) ):
+        if not uuid:
+            fail += 1
+        else :
+            count += 1
+        print "%s [ %s -- %s --> %s ] " % ( uuid, inv_idx.get(obj['source'], None) , "syn", inv_idx.get(obj['target'], None) )
+    print "%s edges inserted, %s failed " % (count, fail)
 
     
 if __name__ == '__main__':

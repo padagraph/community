@@ -9,19 +9,25 @@ class BotError(Exception):
     pass
     
 class BotApiError(BotError):
-    def __init__(self, response):
+    def __init__(self, url, data, response):
         """ Function doc
         :param : 
         """
         self.message ='Something is wrong, got response code %s' % response.status_code
+        self.response = response
+        self.url = url
+        self.data = data
         self.json = response.json()
+        message = "\n".join( [self.message, url, self.json.get('message')])
+        
+        Exception.__init__(self, message) 
         
 class BotLoginError(BotError):
     pass
 
 def gen_slice(gen, chunksize):
     while True:    
-        chunks = list(islice(gen, chunksize))
+        chunks = list(islice(iter(gen), chunksize))
         if chunks == []:
             break
         yield chunks
@@ -29,9 +35,10 @@ def gen_slice(gen, chunksize):
 class Botagraph:
     headers={'Content-Type': 'application/json'}
     
-    def __init__(self, host, key):
+    def __init__(self, host, key, verbose=False):
         self.host = host
         self.key = None if key == "" else key
+        self.verbose = verbose
 
     def authenticate(self, username, password):
         self.key = None
@@ -50,7 +57,17 @@ class Botagraph:
             raise BotLoginError("I miss a valid authentification token user:'%s'" % self.username)
 
         print "Authentification OK %s " % self.key
-            
+
+    def has_graph(self, gid):
+        url = "%s/graphs/g/%s?token=%s" % (self.host, gid, self.key)
+        resp = requests.get(url)
+        return resp.status_code is  200
+        
+    def get_schema(self, gid):
+        url = "%s/graphs/g/%s/schema?token=%s" % (self.host, gid, self.key)
+        resp = requests.get(url)
+        return resp.json()
+        
 
     def create_graph(self, gid, desc=""):
         url = "%s/graphs/create?token=%s" % (self.host,self.key)
@@ -59,14 +76,14 @@ class Botagraph:
                 }
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
         if resp.status_code is not 200:
-            raise BotApiError(resp)
+            raise BotApiError(url, payload, resp)
 
     def _post_one(self, obj_type, gid, payload):
         url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
         
         if resp.status_code is not 200:
-            raise BotError(resp)
+            raise BotApiError(url, payload, resp)
 
         return resp.json()
 
@@ -74,14 +91,19 @@ class Botagraph:
         url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
         for chunks in gen_slice(objs, 100):
             payload = { "%s" % obj_type: chunks }
+            #
+            if self.verbose:
+                print "POST %s, %s " % (url,len(chunks))
             resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
 
             if resp.status_code != 200:
-                raise BotApiError(resp)
+                raise BotApiError(url, payload, resp)
 
             data = resp.json()
-            for v in data['results']:
-                yield v
+
+            results = { i:uuid for i, uuid in data['results'] }
+            for i, obj in enumerate(chunks):
+                yield obj, results.get(i, None) 
         
     def post_node_type(self, gid, name, properties):
         payload = { 'node_type': name,
@@ -125,7 +147,7 @@ class Botagraph:
                 yield node
             
     def find_nodes(self, graph_name, nodetype_name, properties, start=0, size=100):
-        """ Function doc
+        """ find nodes of one type , filters on properties matching '==' 
         :param : 
         """
         url = "%s/graphs/g/%s/find_nodes?token=%s" % (self.host, graph_name, self.key)
