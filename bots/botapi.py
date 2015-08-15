@@ -69,16 +69,18 @@ class Botagraph:
 
         return resp
 
-    def has_graph(self, gid):
-        url = "%s/graphs/g/%s?token=%s" % (self.host, gid, self.key)
-        resp = self.post(url)
-        return resp.status_code is  200
-        
     def get_schema(self, gid):
         url = "%s/graphs/g/%s/schema?token=%s" % (self.host, gid, self.key)
         resp = self.post(url)
         return resp.json()
         
+    def has_graph(self, gid):
+        url = "%s/graphs/g/%s?token=%s" % (self.host, gid, self.key)
+        try : 
+            resp = self.post(url)
+            return resp.status_code is 200
+        except BotApiError :
+            return False
 
     def create_graph(self, gid, desc=""):
         url = "%s/graphs/create?token=%s" % (self.host,self.key)

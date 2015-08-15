@@ -113,7 +113,7 @@ def main():
             fail += 1
         else :
             count += 1
-        print "%s [ %s -- %s --> %s ] " % ( uuid, inv_idx.get(obj['source'], None) , "syn", inv_idx.get(obj['target'], None) )
+        #print "%s [ %s -- %s --> %s ] " % ( uuid, inv_idx.get(obj['source'], None) , "syn", inv_idx.get(obj['target'], None) )
     print "%s edges inserted, %s failed " % (count, fail)
 
     
