@@ -17,8 +17,8 @@ class BotApiError(BotError):
         self.response = response
         self.url = url
         self.data = data
-        self.json = response.json()
-        message = "\n".join( [self.message, url, self.json.get('message')])
+        self.json = {}#response.json()
+        message = "\n".join( [self.message,  url, self.json.get('message', "")])
         
         Exception.__init__(self, message) 
         
@@ -40,13 +40,15 @@ class Botagraph:
         self.key = None if key == "" else key
         self.verbose = verbose
 
+
+
     def authenticate(self, username, password):
         self.key = None
-        self.username = username
-        self.password = password
+
         url = "%s/auth/authenticate" % (self.host)
         payload = { 'username':username, 'password':password }
-        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+
+        resp = self.post(url, payload)
 
         print url, payload, resp.text
         if 200 == resp.status_code:
@@ -57,15 +59,24 @@ class Botagraph:
             raise BotLoginError("I miss a valid authentification token user:'%s'" % self.username)
 
         print "Authentification OK %s " % self.key
+    
+    def post(self, url, payload={}):
+
+        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+        
+        if resp.status_code != 200:
+            raise BotApiError(url, payload, resp)
+
+        return resp
 
     def has_graph(self, gid):
         url = "%s/graphs/g/%s?token=%s" % (self.host, gid, self.key)
-        resp = requests.get(url)
+        resp = self.post(url)
         return resp.status_code is  200
         
     def get_schema(self, gid):
         url = "%s/graphs/g/%s/schema?token=%s" % (self.host, gid, self.key)
-        resp = requests.get(url)
+        resp = self.post(url)
         return resp.json()
         
 
@@ -74,17 +85,13 @@ class Botagraph:
         payload = { "name": gid,
                     "desc": desc
                 }
-        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
-        if resp.status_code is not 200:
-            raise BotApiError(url, payload, resp)
+        resp = self.post(url, payload)
+        return resp.json()
 
     def _post_one(self, obj_type, gid, payload):
         url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
-        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+        resp = self.post(url, payload)
         
-        if resp.status_code is not 200:
-            raise BotApiError(url, payload, resp)
-
         return resp.json()
 
     def _post_multi(self, obj_type, gid, objs ):
@@ -94,14 +101,11 @@ class Botagraph:
             #
             if self.verbose:
                 print "POST %s, %s " % (url,len(chunks))
-            resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
-
-            if resp.status_code != 200:
-                raise BotApiError(url, payload, resp)
+            resp = self.post(url, payload)
 
             data = resp.json()
-
             results = { i:uuid for i, uuid in data['results'] }
+
             for i, obj in enumerate(chunks):
                 yield obj, results.get(i, None) 
         
@@ -145,7 +149,9 @@ class Botagraph:
             start += size
             for node in nodes:
                 yield node
-            
+
+    
+    
     def find_nodes(self, graph_name, nodetype_name, properties, start=0, size=100):
         """ find nodes of one type , filters on properties matching '==' 
         :param : 
@@ -157,12 +163,26 @@ class Botagraph:
                 "node_type" : nodetype_name,
                 "properties" : properties
         }
-        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
-
-        if resp.status_code != 200:
-            raise BotApiError(url, payload, resp)
-
+        resp = self.post(url, payload)
         data = resp.json()
+
         for v in data['nodes']:
             yield v
+        
+    def get_neighbors(self, graph, node ):
+        """ Function doc
+        :param : 
+        """
+        url = "%s/graphs/g/%s/node/%s/neighbors?token=%s" % (self.host, graph, node, self.key)
+        resp = self.post(url, {})
+        return resp.json()['neighbors']
+        
+    def count_neighbors(self, graph, node ):
+        """ Function doc
+        :param : 
+        """
+        url = "%s/graphs/g/%s/node/%s/neighbors?token=%s" % (self.host, graph, node, self.key)
+        resp = self.post(url, {})
+        return resp.json()['neighbors']
+        
         
