@@ -160,7 +160,7 @@ class Botagraph:
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
 
         if resp.status_code != 200:
-            raise BotApiError(resp)
+            raise BotApiError(url, payload, resp)
 
         data = resp.json()
         for v in data['nodes']:
