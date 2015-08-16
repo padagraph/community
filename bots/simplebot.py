@@ -30,7 +30,6 @@ def gen_edges(graph, idx):
             'source': idx[src],
             'target': idx[tgt],
             'properties':{
-                'label': label,
             }
         }
         yield payload

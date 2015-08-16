@@ -158,7 +158,7 @@ class Botagraph:
         """ find nodes of one type , filters on properties matching '==' 
         :param : 
         """
-        url = "%s/graphs/g/%s/find_nodes?token=%s" % (self.host, graph_name, self.key)
+        url = "%s/graphs/g/%s/nodes/find?token=%s" % (self.host, graph_name, self.key)
         payload = {
                 "start": start,
                 "size" : size,
