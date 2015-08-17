@@ -17,7 +17,7 @@ class BotApiError(BotError):
         self.response = response
         self.url = url
         self.data = data
-        self.json = {}#response.json()
+        #self.json = response.json()
         message = "\n".join( [self.message,  url, self.json.get('message', "")])
         
         Exception.__init__(self, message) 
@@ -35,11 +35,10 @@ def gen_slice(gen, chunksize):
 class Botagraph:
     headers={'Content-Type': 'application/json'}
     
-    def __init__(self, host, key, verbose=False):
+    def __init__(self, host="http://localhost:5000", key=None, verbose=False):
         self.host = host
         self.key = None if key == "" else key
         self.verbose = verbose
-
 
 
     def authenticate(self, username, password):
@@ -69,6 +68,14 @@ class Botagraph:
 
         return resp
 
+    def get(self, url):
+        resp = requests.get(url)
+        
+        if resp.status_code != 200:
+            raise BotApiError(url, {}, resp)
+
+        return resp
+
     def get_schema(self, gid):
         url = "%s/graphs/g/%s/schema?token=%s" % (self.host, gid, self.key)
         resp = self.post(url)
@@ -90,6 +97,16 @@ class Botagraph:
         resp = self.post(url, payload)
         return resp.json()
 
+    def get_node_by_id(self, graph, uuid):
+        url = "%s/graphs/g/%s/node/%s?token=%s" % (self.host, graph, uuid, self.key)
+        resp = self.get(url)
+        return resp.json()
+
+    def get_node_by_name(self, graph, uuid):
+        url = "%s/graphs/g/%s/node/%s/by_name?token=%s" % (self.host, graph, uuid, self.key)
+        resp = self.get(url)
+        return resp.json()
+        
     def _post_one(self, obj_type, gid, payload):
         url = "%s/graphs/g/%s/%s?token=%s" % (self.host, gid, obj_type, self.key)
         resp = self.post(url, payload)
@@ -141,22 +158,16 @@ class Botagraph:
         for v in self._post_multi("edges", gid, edges ):
             yield v
 
-    def find_all_nodes(self, graph_name, nodetype_name, properties):
-        start=0
-        size=100
-        while True:
-            nodes = list( self.find_nodes(graph_name, nodetype_name, properties, start, size))
-            if not len(nodes) :
-                break
-            start += size
-            for node in nodes:
-                yield node
-
-    
     
     def find_nodes(self, graph_name, nodetype_name, properties, start=0, size=100):
-        """ find nodes of one type , filters on properties matching '==' 
-        :param : 
+        """ iterate nodes of one type , filters on properties matching '==' 
+        :param graph: graph name
+        :param nodetype_name: node_type name
+        :param properties: dict of key:value node should match
+        :param start: pagination start
+        :param size:  resultset size ( may be shorten by server )
+
+             
         """
         url = "%s/graphs/g/%s/nodes/find?token=%s" % (self.host, graph_name, self.key)
         payload = {
@@ -171,9 +182,25 @@ class Botagraph:
         for v in data['nodes']:
             yield v
         
+    def find_all_nodes(self, graph_name, nodetype_name, properties):
+        """
+        like find nodes makes a complete iteration of the nodes matching node_type and properties
+            :see: find_nodes
+        """
+        start=0
+        size=100
+        while True:
+            nodes = list( self.find_nodes(graph_name, nodetype_name, properties, start, size))
+            if not len(nodes) :
+                break
+            start += size
+            for node in nodes:
+                yield node
+
     def get_neighbors(self, graph, node ):
-        """ Function doc
-        :param : 
+        """ return neighbors of a node
+        :param graph: graph name  
+        :param node: node uuid  
         """
         url = "%s/graphs/g/%s/node/%s/neighbors?token=%s" % (self.host, graph, node, self.key)
         resp = self.post(url, {})
@@ -183,8 +210,23 @@ class Botagraph:
         """ Function doc
         :param : 
         """
-        url = "%s/graphs/g/%s/node/%s/neighbors?token=%s" % (self.host, graph, node, self.key)
+        url = "%s/graphs/g/%s/node/%s/neighbors/count?token=%s" % (self.host, graph, node, self.key)
         resp = self.post(url, {})
         return resp.json()['neighbors']
+
+    def prox(self, graph, pzeros, weights=[], filter_edges=[], filter_nodes=[], step=3, limit=100):
+        url = "%s/graphs/g/%s/proxemie?token=%s" % (self.host, graph, self.key)
+        payload =  {
+            'p0' : pzeros,
+            'weights': weights, 
+            'filter_nodes' : filter_nodes , 
+            'filter_edges' : filter_edges , 
+            'limit': limit, 
+            'step':step, 
+        }
+
+        resp = self.post(url, payload)
+        
+        return resp.json()
         
         
