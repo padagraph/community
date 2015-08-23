@@ -34,15 +34,6 @@ def gen_edges(graph, idx):
         }
         yield payload
 
-    yield  {
-            'edge_type': 'is_syn',
-            'source': "mhldhfl",
-            'target': "zjelahzrl",
-            'properties':{
-                'label': label,
-            }
-        }
-
 def main():
     """ re-Index all the Proxteam corpus """
     parser = argparse.ArgumentParser()
@@ -82,8 +73,8 @@ def main():
         print "create edge type %s" % "is_syn"
         bot.post_edge_type(gid, "is_syn", { })
 
-    print "Get schema '%s'" % gid
-    print bot.get_schema(gid)
+    #print "Get schema '%s'" % gid
+    #print bot.get_schema(gid)
     
     idx = {}
     

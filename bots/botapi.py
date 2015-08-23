@@ -18,7 +18,7 @@ class BotApiError(BotError):
         self.url = url
         self.data = data
         #self.json = response.json()
-        message = "\n".join( [self.message,  url, self.json.get('message', "")])
+        message = "\n".join( [self.message,  url, str(data)])
         
         Exception.__init__(self, message) 
         
@@ -228,5 +228,14 @@ class Botagraph:
         resp = self.post(url, payload)
         
         return resp.json()
-        
+
+    def get_subgraph(graph, nodes_uuids):
+        url = "%s/graphs/g/%s/subgraph?token=%s" % (self.host, graph, self.key)
+        payload =  {
+            'graph' : graph,
+            'uuids': nodes_uuids,
+        }
+            
+        resp = self.post(url, payload)
+        return resp.json()
         
