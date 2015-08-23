@@ -55,15 +55,15 @@ def main():
     bot.post_edge_type('Old Chinese', 'Sinograms', {})
 
     Inidict = {}
-    for  i, res in enumerate(bot.post_nodes('Old Chinese',
-        ({'node_type':'Initial', 'label':i} for i in Initiales))): 
-        Inidict[Initiales[i]] = res['uuid']
+    for  i, (_, uuid) in enumerate(bot.post_nodes('Old Chinese',
+        ({'node_type':'Initial', 'properties':{'label':i}} for i in Initiales))): 
+        Inidict[Initiales[i]] = uuid
     
     GSRdict = {}
-    for  i, res in enumerate(bot.post_nodes('Old Chinese',({'node_type':'GSR', 'label':s} for s in GSR))): 
-        GSRdict[GSR[i]] = res['uuid']
+    for  i, (_, uuid) in enumerate(bot.post_nodes('Old Chinese',({'node_type':'GSR', 'properties': {'label':s}} for s in GSR))): 
+        GSRdict[GSR[i]] = uuid
     edges = [{'edge_type':'Sinograms',
-              'label': u",".join(sinos),
+              'properties':{'label': u",".join(sinos)},
               'source': GSRdict[gsr],
               'target': Inidict[i]} for (i, gsr), sinos in Matrix.iteritems()]
     #for e in edges:
