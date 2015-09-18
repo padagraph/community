@@ -8,25 +8,26 @@ import igraph
 from botapi import Botagraph, BotApiError
 
 
-def gen_nodes(graph):
+def gen_nodes(graph, nodetype):
     for v in graph.vs:
         payload = {
-                    'node_type': 'word',
+                    'nodetype': nodetype,
                     'properties': { 
                         'label': v['label'],
-                        'lang':'fr'
+                        'lang':'fr',
+                        
                     }
                 }
         yield payload
 
-def gen_edges(graph, idx):
+def gen_edges(graph, edgetype, idx):
     for e in graph.es:
         src = graph.vs[e.source]['label']
         tgt = graph.vs[e.target]['label']
         label = "is_syn"
         
         payload = {
-            'edge_type': 'is_syn',
+            'edgetype': edgetype,
             'source': idx[src],
             'target': idx[tgt],
             'properties':{
@@ -69,21 +70,30 @@ def main():
         print "create graph %s" % gid
         bot.create_graph(gid, "no description")
         print "create node type %s" % "word"
-        bot.post_node_type(gid, "word", { "desc": "no description"})
+        bot.post_nodetype(gid, "word",  "no description", {})
         print "create edge type %s" % "is_syn"
-        bot.post_edge_type(gid, "is_syn", { })
+        bot.post_edgetype(gid, "is_syn", "no desc", {})
 
-    #print "Get schema '%s'" % gid
-    #print bot.get_schema(gid)
-    
+    print "Get schema '%s'" % gid
+    schema = bot.get_schema(gid)['schema']
+    nodetypes = { n['name']:n for n in schema['nodetypes'] }
+    edgetypes = { e['name']:e for e in schema['edgetypes'] }
+
+    print nodetypes
+    print edgetypes
+
     idx = {}
     
     print "posting nodes"
     count = 0
-    for node, uuid in bot.post_nodes( gid, gen_nodes(graph) ):
-        idx[node['properties']['label']] = uuid
-        count += 1
-        #print ">>> ", node['properties']['label'], uuid 
+    fail = 0
+    for node, uuid in bot.post_nodes( gid, gen_nodes(graph, nodetypes['word']['uuid']) ):
+        if not uuid:
+            fail += 1
+        else :
+            count += 1
+            idx[node['properties']['label']] = uuid
+        
     print "%s nodes inserted " % count
 
     
@@ -98,7 +108,7 @@ def main():
 
     inv_idx = { v:k for k,v in idx.iteritems() }
     
-    for obj, uuid in bot.post_edges( gid, gen_edges(graph, idx) ):
+    for obj, uuid in bot.post_edges( gid, gen_edges(graph, edgetypes['is_syn']['uuid'], idx) ):
         if not uuid:
             fail += 1
         else :

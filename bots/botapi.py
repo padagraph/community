@@ -120,6 +120,7 @@ class Botagraph:
             #
             if self.verbose:
                 print "POST %s, %s " % (url,len(chunks))
+
             resp = self.post(url, payload)
 
             data = resp.json()
@@ -128,18 +129,22 @@ class Botagraph:
             for i, obj in enumerate(chunks):
                 yield obj, results.get(i, None) 
         
-    def post_node_type(self, gid, name, properties):
-        payload = { 'node_type': name,
+    def post_nodetype(self, gid, name, desc,  properties):
+        payload = { 'name': name,
+                    'description' : desc,
                     'properties': properties
-                   }
-        resp = self._post_one( "node_type", gid, payload )
+                  }
+        resp = self._post_one( "nodetype", gid, payload )
+
         return resp['uuid']
         
-    def post_edge_type(self, gid, name, properties):
-        payload = { 'edge_type' : name,
+    def post_edgetype(self, gid, name, desc,  properties):
+        payload = { 'edgetype' : name,
+                    'description': desc,
                     'properties': properties
-                   }
-        resp = self._post_one( "edge_type", gid, payload )
+                  }
+                   
+        resp = self._post_one( "edgetype", gid, payload )
         
         return resp['uuid']
         
