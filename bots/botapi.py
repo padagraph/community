@@ -132,8 +132,9 @@ class Botagraph:
     def post_nodetype(self, gid, name, desc,  properties):
         payload = { 'name': name,
                     'description' : desc,
-                    'properties': properties
+                    'properties': { k: v.as_dict() for k,v in properties.iteritems() }
                   }
+        print payload
         resp = self._post_one( "nodetype", gid, payload )
 
         return resp['uuid']
@@ -141,7 +142,7 @@ class Botagraph:
     def post_edgetype(self, gid, name, desc,  properties):
         payload = { 'edgetype' : name,
                     'description': desc,
-                    'properties': properties
+                    'properties': { k: v.as_dict() for k,v in properties.iteritems() }
                   }
                    
         resp = self._post_one( "edgetype", gid, payload )

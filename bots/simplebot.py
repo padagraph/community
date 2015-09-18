@@ -3,6 +3,7 @@
 import sys
 import argparse
 import igraph
+from reliure.types import * 
 
 
 from botapi import Botagraph, BotApiError
@@ -70,7 +71,10 @@ def main():
         print "create graph %s" % gid
         bot.create_graph(gid, "no description")
         print "create node type %s" % "word"
-        bot.post_nodetype(gid, "word",  "no description", {})
+        props = { "label" : Text(),
+                  "lang"  : Text()
+                }
+        bot.post_nodetype(gid, "word",  "no description", props)
         print "create edge type %s" % "is_syn"
         bot.post_edgetype(gid, "is_syn", "no desc", {})
 
