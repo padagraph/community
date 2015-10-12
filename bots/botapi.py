@@ -89,10 +89,19 @@ class Botagraph:
         except BotApiError :
             return False
 
-    def create_graph(self, gid, desc=""):
+    def create_graph(self, gid, props):
+
+        payload = {
+                    "description": "",
+                    "tags": [],
+                    "image": "",
+         }
+        
         url = "%s/graphs/create?token=%s" % (self.host,self.key)
         payload = { "name": gid,
-                    "desc": desc
+                    "description": props.get('description', ""),
+                    "tags": props.get('tags', []),
+                    "image": props.get('image', ""),
                 }
         resp = self.post(url, payload)
         return resp.json()

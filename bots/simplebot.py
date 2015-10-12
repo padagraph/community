@@ -69,7 +69,11 @@ def main():
 
     if not bot.has_graph(gid) :
         print "create graph %s" % gid
-        bot.create_graph(gid, "no description")
+        bot.create_graph(gid, { 'description':"Dicosyn experiment\n * ",
+                                'image': "",
+                                'tags': ['synonymes', 'dictionnaire']
+                              }
+                        )
         print "create node type %s" % "word"
         props = { "label" : Text(),
                   "lang"  : Text()
