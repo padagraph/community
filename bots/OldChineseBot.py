@@ -8,6 +8,7 @@ from collections import defaultdict
 
 from botapi import Botagraph
 
+GID = 'Old Chinese'
 
 def load_OCR_file(path):
     with codecs.open(path, "r", "utf8") as F:
@@ -49,27 +50,34 @@ def main():
         bot.authenticate(args.username, args.password)
 
     (Initiales, GSR, Matrix) = load_OCR_file(args.path)
-    bot.create_graph('Old Chinese', 'a graph of Old Chinese phonology')
-    bot.post_node_type('Old Chinese', 'GSR', {}) 
-    bot.post_node_type('Old Chinese', 'Initial', {}) 
-    bot.post_edge_type('Old Chinese', 'Sinograms', {})
+    if not bot.has_graph(GID):
+        bot.create_graph(GID, {'description': 'a graph of Old Chinese phonology',
+                                     'image': "",
+                                     'tags': ['chinese','phonology']})
+        bot.post_nodetype(GID, 'GSR', 'Karlgren', {}) 
+        bot.post_nodetype(GID, 'Initial', '', {}) 
+        bot.post_edgetype(GID, 'Sinograms', '',{})
 
+    print "Get schema '%s'" % GID
+    schema = bot.get_schema(GID)['schema']
+    nodetypes = { n['name']:n for n in schema['nodetypes'] }
+    edgetypes = { e['name']:e for e in schema['edgetypes'] }
     Inidict = {}
-    for  i, (_, uuid) in enumerate(bot.post_nodes('Old Chinese',
-        ({'node_type':'Initial', 'properties':{'label':i}} for i in Initiales))): 
+    for  i, (_, uuid) in enumerate(bot.post_nodes(GID,
+        ({'nodetype':nodetypes['Initial']['uuid'], 'properties':{'label':i}} for i in Initiales))): 
         Inidict[Initiales[i]] = uuid
     
     GSRdict = {}
-    for  i, (_, uuid) in enumerate(bot.post_nodes('Old Chinese',({'node_type':'GSR', 'properties': {'label':s}} for s in GSR))): 
+    for  i, (_, uuid) in enumerate(bot.post_nodes(GID,({'nodetype':nodetypes['GSR']['uuid'], 'properties': {'label':s}} for s in GSR))): 
         GSRdict[GSR[i]] = uuid
-    edges = [{'edge_type':'Sinograms',
+    edges = [{'edgetype':edgetypes['Sinograms']['uuid'],
               'properties':{'label': u",".join(sinos)},
               'source': GSRdict[gsr],
               'target': Inidict[i]} for (i, gsr), sinos in Matrix.iteritems()]
     #for e in edges:
     #    print e
-    #    bot.post_edge('Old Chinese', e)
-    for _ in bot.post_edges('Old Chinese', iter(edges)):
+    #    bot.post_edge(GID, e)
+    for _ in bot.post_edges(GID, iter(edges)):
         pass
 
 
