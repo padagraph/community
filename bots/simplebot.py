@@ -46,16 +46,18 @@ def main():
     parser.add_argument("--password" , action='store', help="pwd", default=None)
     parser.add_argument("--path", action='store', help="path", default=None)
     parser.add_argument("--gid", action='store', help="graph id", default=None)
-
+    parser.add_argument("--create-types", action='store_true', help="create node/edge types", default=None)
+    
     args = parser.parse_args()
 
-
     # Bot creation & login 
+    print "connectiong %s" % args.key 
     bot = Botagraph(args.host, args.key)
 
     if args.username and args.password:
         bot.authenticate(args.username, args.password)
 
+    print "reading %s" % args.path
     # read / parse graph
     graph = igraph.read(args.path)
 
@@ -66,7 +68,8 @@ def main():
     # create empty graph
     gid =  args.gid
 
-
+    create_types = args.create_types
+    
     if not bot.has_graph(gid) :
         print "create graph %s" % gid
         bot.create_graph(gid, { 'description':"Dicosyn experiment\n * ",
@@ -74,12 +77,14 @@ def main():
                                 'tags': ['synonymes', 'dictionnaire']
                               }
                         )
-        print "create node type %s" % "word"
+                        
+        print "creating node type %s" % "word"
         props = { "label" : Text(),
                   "lang"  : Text()
                 }
         bot.post_nodetype(gid, "word",  "no description", props)
-        print "create edge type %s" % "is_syn"
+
+        print "creating edge type %s" % "is_syn"
         bot.post_edgetype(gid, "is_syn", "no desc", {})
 
     print "Get schema '%s'" % gid
@@ -91,7 +96,7 @@ def main():
     print edgetypes
 
     idx = {}
-    
+
     print "posting nodes"
     count = 0
     fail = 0
