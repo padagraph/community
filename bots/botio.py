@@ -56,7 +56,7 @@ def main():
     """
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("-g", action='store', help="graph id", default=None)
+    parser.add_argument("gid", action='store', help="graph id", default=None)
     # unimplemented
     parser.add_argument("--host", action='store', help="host", default="http://localhost:5000")
     parser.add_argument("--key" , action='store', help="key", default=None)
@@ -69,8 +69,8 @@ def main():
     # Bot creation 
     io = Botio()
 
-    print "botio is listening to %s" % args.g
-    io.listenTo(args.g)
+    print "botio is listening to %s" % args.gid
+    io.listenTo(args.gid)
     
     io.socket.wait()
 
