@@ -48,19 +48,21 @@ class Botagraph:
         url = "auth/authenticate"
         payload = { 'username':username, 'password':password }
 
-        resp = self.post(url , payload)
-
+        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+        
         print url, payload, resp.text
+            
         if 200 == resp.status_code:
             resp = resp.json()  
             self.key = resp.get('token')
 
-        if self.key is None:
-            raise BotLoginError("I miss a valid authentification token user:'%s'" % self.username)
 
         print "Authentification OK %s " % self.key
     
     def post(self, url, payload={}):
+
+        if self.key is None:
+            raise BotLoginError("I miss a valid authentification token")
 
         url = "%s/%s?token=%s" %(self.host, url , self.key)
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
