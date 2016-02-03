@@ -87,12 +87,23 @@ class Botagraph:
         return resp.json()
         
     def has_graph(self, gid):
+        g = self.get_graph(gid)
+        print "has graph " , g
+        try : 
+            g['name']
+            return True
+        except:
+            return False
+
+        
+    def get_graph(self, gid):
         url = "graphs/g/%s" % (gid)
         try : 
             resp = self.get(url)
-            return resp.status_code is 200
-        except BotApiError :
-            return False
+            g = resp.json()
+            return g[gid]
+        except  :
+            return None
 
     def create_graph(self, gid, props):
 
@@ -182,7 +193,7 @@ class Botagraph:
     def find_nodes(self, gid, nodetype_name, properties, start=0, size=100):
         """ iterate nodes of one type , filters on properties matching '==' 
         :param graph: graph name
-        :param nodetype_name: node_type name
+        :param nodetype_name: nodetype name
         :param properties: dict of key:value node should match
         :param start: pagination start
         :param size:  resultset size ( may be shorten by server )
@@ -193,7 +204,7 @@ class Botagraph:
         payload = {
                 "start": start,
                 "size" : size,
-                "node_type" : nodetype_name,
+                "nodetype" : nodetype_name,
                 "properties" : properties
         }
         resp = self.post(url, payload)

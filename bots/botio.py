@@ -17,7 +17,7 @@ class Botio(object):
                 'delete edge',
             ];
 
-    def __init__(self, url='localhost', port=3000 ):
+    def __init__(self, url='http://localhost', port=3000 ):
         """  """
         self.socket =  SocketIO(url, port)
 
@@ -67,7 +67,7 @@ def main():
     args = parser.parse_args()
 
     # Bot creation 
-    io = Botio()
+    io = Botio(url=args.host)
 
     print "botio is listening to %s" % args.gid
     io.listenTo(args.gid)
