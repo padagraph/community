@@ -1,8 +1,12 @@
 #-*- coding:utf-8 -*-
 
 import sys
+import time   
 import argparse
+from random import randint
+
 import igraph
+
 from reliure.types import * 
 
 
@@ -143,8 +147,6 @@ def main():
         raw_input("press <enter> key to start edges and nodes importation") 
 
     if args.seed: 
-        from random import randint
-        import time        
 
         def set_node(v):
             if v['label'] not in idx:
@@ -257,7 +259,6 @@ def main():
 def pause(waitms):
     if waitms > 0:
         if randint(1,12) == 1:
-            print graph.summary()
             # waiting time is given in ms
             time.sleep(waitms/1000)
     
