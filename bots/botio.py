@@ -57,19 +57,16 @@ def main():
     parser = argparse.ArgumentParser()
     
     parser.add_argument("gid", action='store', help="graph id", default=None)
-    # unimplemented
-    parser.add_argument("--host", action='store', help="host", default="http://localhost:5000")
-    parser.add_argument("--key" , action='store', help="key", default=None)
-    parser.add_argument("--username" , action='store', help="user", default=None)
-    parser.add_argument("--password" , action='store', help="pwd", default=None)
-    parser.add_argument("--listen", action='store_true', help="listen on what default all", default=None)
-    
+    parser.add_argument("--host", action='store', help="host", default="http://localhost")
+    parser.add_argument("--port", action='store', help="port", default="3000", type=int)
+
+
     args = parser.parse_args()
 
     # Bot creation 
-    io = Botio(url=args.host)
+    io = Botio(url=args.host, port=args.port)
 
-    print "botio is listening to %s" % args.gid
+    print "botio is listening to %s @ %s:%s" % ( args.gid, args.host, args.port )
     io.listenTo(args.gid)
     
     io.socket.wait()
