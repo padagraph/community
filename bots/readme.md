@@ -34,8 +34,9 @@ Making programs to be be able to react on a chosen event in conjunction with the
 For fact checking, page scraping, games or exercices.
 
 ```
+from botio import Botio
 
-host = "h tp://padagraph.io"
+host = "http://padagraph.io"
 port = 80
 graph = "mygraph"
 
