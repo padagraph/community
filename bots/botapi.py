@@ -38,9 +38,13 @@ class Botagraph:
     
     def __init__(self, host="http://localhost:5000", key=None, verbose=False):
         self.host = host
-        self.key = None if key == "" else key
         self.verbose = verbose
 
+        self.key = None if key == "" else key
+        # try to connect  
+        if self.key:
+            url = "%s/auth/me" % self.host
+            me = requests.get(url)
 
     def authenticate(self, username, password):
         self.key = None
@@ -56,8 +60,8 @@ class Botagraph:
             resp = resp.json()  
             self.key = resp.get('token')
 
+        print ("Authentification OK ")
 
-        print "Authentification OK %s " % self.key
     
     def post(self, url, payload={}):
 
@@ -154,6 +158,9 @@ class Botagraph:
             for i, obj in enumerate(chunks):
                 yield obj, results.get(i, None) 
         
+    def create_nodetype(self, gid, name, desc,  properties):
+        return self.post_nodetype( gid, name, desc,  properties)
+
     def post_nodetype(self, gid, name, desc,  properties):
         payload = { 'name': name,
                     'description' : desc,

@@ -17,30 +17,27 @@ class Botio(object):
                 'delete edge',
             ];
 
-    def __init__(self, url='http://localhost', port=3000 ):
+    def __init__(self, host='http://localhost', port=3000 ):
         """  """
-        self.socket =  SocketIO(url, port)
-
-        def f(e):
-            def log(*args):
-                print e, args
-            return log
-            
-        for event in Botio.events:
-            self.on(event, f(event) )
+        self.socket =  SocketIO(host, port)
 
     # on
 
     def on(self, event, callback):
         self.socket.on(event, callback)
-        
+
+    # remove events
+
+    # TODO ... .
+    # .. .... .. 
+    
     # emit
     
     def emit(self, event, uid):
         self.socket.emit(event, uid)
         self.socket.wait(1)
     
-    # listen
+    # listen / stop
 
     def listenTo(self,  uid):
         self.emit('listenTo', uid)
@@ -64,10 +61,18 @@ def main():
     args = parser.parse_args()
 
     # Bot creation 
-    io = Botio(url=args.host, port=args.port)
+    io = Botio(host=args.host, port=args.port)
 
-    print "botio is listening to %s @ %s:%s" % ( args.gid, args.host, args.port )
+    def wrap(e):
+        def log(*args):
+            print e, args
+        return log
+            
     io.listenTo(args.gid)
+    for event in Botio.events:
+        io.on(event, wrap(event) )
+            
+    print "botio is listening to %s @ %s:%s" % ( args.gid, args.host, args.port )
     
     io.socket.wait()
 

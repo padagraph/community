@@ -15,13 +15,13 @@ from botapi import Botagraph, BotApiError
 
 def node_payload(vertex, nodetype):
     return {
-                'nodetype': nodetype,
-                'properties': { 
-                    'label': vertex['label'],
-                    'lang':'fr',
-                    
-                }
+            'nodetype': nodetype,
+            'properties': { 
+                'label': vertex['label'],
+                'lang':'fr',
+                
             }
+          }
 
 def edge_payload(edgetype, src, tgt, properties):
     return {

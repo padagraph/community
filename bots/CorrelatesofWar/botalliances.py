@@ -136,6 +136,7 @@ def main():
     idx = {}
     for node, uuid in bot.post_nodes( gid, g.vs.itervalues() ):
         idx[ node['properties']['code']] =  uuid
+        
     print "%s nodes inserted . " % (len(idx))
 
     for edge in g.es.itervalues():
