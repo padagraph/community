@@ -24,7 +24,9 @@ class BotApiError(BotError):
         Exception.__init__(self, message) 
         
 class BotLoginError(BotError):
-    pass
+    def __init__(self, message):
+        super(BotLoginError, self).__init__(message)
+    
 
 def gen_slice(gen, chunksize):
     while True:    
@@ -43,14 +45,14 @@ class Botagraph:
         self.key = None if key == "" else key
         # try to connect  
         if self.key:
-            url = "%s/auth/me" % self.host
-            me = requests.get(url)
-
-    def authenticate(self, username, password):
+            url = "account/me"
+            resp = self.get(url)
+            
+    def authenticate(self, email, password):
         self.key = None
 
-        url = "auth/authenticate"
-        payload = { 'username':username, 'password':password }
+        url = "account/authenticate"
+        payload = { 'email':email, 'password':password }
 
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
         
@@ -71,7 +73,10 @@ class Botagraph:
         url = "%s/%s?token=%s" %(self.host, url , self.key)
         resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
         
-        if resp.status_code != 200:
+        if 401 == resp.status_code:
+            raise BotLoginError('Invalid credentials') 
+
+        elif resp.status_code != 200:
             raise BotApiError(url, payload, resp)
 
         return resp
@@ -79,8 +84,11 @@ class Botagraph:
     def get(self, url):
         url = "%s/%s?token=%s" %(self.host, url , self.key)
         resp = requests.get(url)
-        
-        if resp.status_code != 200:
+
+        if 401 == resp.status_code:
+            raise BotLoginError('Invalid credentials') 
+
+        elif resp.status_code != 200:
             raise BotApiError(url, {}, resp)
 
         return resp
@@ -124,6 +132,7 @@ class Botagraph:
                     "image": props.get('image', ""),
                 }
         resp = self.post(url, payload)
+        print url, resp.text
         return resp.json()
 
     def get_node_by_id(self, gid, uuid):

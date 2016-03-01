@@ -212,7 +212,6 @@ def main():
 
                     else: break
 
-                    
             # wait sometimes
             pause(args.pause)
 
