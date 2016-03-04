@@ -93,6 +93,19 @@ class Botagraph:
 
         return resp
 
+    def delete(self, url):
+        url = "%s/%s?token=%s" %(self.host, url , self.key)
+        resp = requests.delete(url)
+
+        if 401 == resp.status_code:
+            raise BotLoginError('Invalid credentials') 
+
+        elif resp.status_code != 200:
+            raise BotApiError(url, {}, resp)
+
+        return resp
+
+
     def get_schema(self, gid):
         url = "graphs/g/%s/schema" % gid
         resp = self.post(url)
@@ -195,6 +208,16 @@ class Botagraph:
          
     def post_edge(self, gid, payload):
         return self._post_one( "edge", gid, payload )
+
+    
+  
+    def delete_edge(self, gid, eid):
+        url = "graphs/g/%s/edge/%s" % (gid, eid)
+        self.delete(url)
+        
+    def delete_node(self, gid, nid):
+        url = "graphs/g/%s/node/%s" % (gid, nid)
+        self.delete(url)
         
 
     def post_nodes(self, gid, nodes ):

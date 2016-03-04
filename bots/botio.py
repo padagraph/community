@@ -19,6 +19,8 @@ class Botio(object):
 
     def __init__(self, host='http://localhost', port=3000 ):
         """  """
+        
+        print "connecting", "@ %s:%s" % ( host, port )
         self.socket =  SocketIO(host, port)
 
     # on
@@ -67,7 +69,8 @@ def main():
         def log(*args):
             print e, args
         return log
-            
+
+    
     io.listenTo(args.gid)
     for event in Botio.events:
         io.on(event, wrap(event) )
