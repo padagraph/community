@@ -48,13 +48,72 @@ class Botagraph:
             url = "account/me"
             resp = self.get(url)
             
+    def _send(self, method, url, payload={}):
+    
+        if self.key is None:
+            raise BotLoginError("I miss a valid authentification token")
+
+        url = "%s/%s?token=%s" %(self.host, url , self.key)
+
+        if method == "GET":
+            resp = requests.get(url)
+        if method == "DELETE":
+            resp = requests.delete(url)
+        if method == "POST":
+            resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+        if method == "PUT":
+            resp = requests.put(url, data=json.dumps(payload), headers=self.headers)
+        
+        if 401 == resp.status_code:
+            raise BotLoginError('Invalid credentials') 
+
+        elif resp.status_code != 200:
+            raise BotApiError(url, payload, resp)
+
+        return resp
+        
+    def post(self, url, payload={}):
+        return self._send("POST", url, payload)
+        
+    def put(self, url, payload={}):
+        return self._send("PUT", url, payload)
+        
+    def get(self, url):
+        return self._send("GET", url)
+
+    def delete(self, url):
+        return self._send("DELETE", url)
+
+    def _post_one(self, obj_type, gid, payload):
+        url = "graphs/g/%s/%s" % (gid, obj_type)
+        resp = self.post(url, payload)
+        
+        return resp.json()
+
+    def _post_multi(self, obj_type, gid, objs ):
+        url = "graphs/g/%s/%s" % (gid, obj_type)
+        for chunks in gen_slice(objs, 100):
+            payload = { "%s" % obj_type: chunks }
+            #
+            if self.verbose:
+                print "POST %s, %s " % (url,len(chunks))
+
+            resp = self.post(url, payload)
+
+            data = resp.json()
+            results = { i:uuid for i, uuid in data['results'] }
+
+            for i, obj in enumerate(chunks):
+                yield obj, results.get(i, None) 
+        
+        
     def authenticate(self, email, password):
         self.key = None
 
         url = "account/authenticate"
         payload = { 'email':email, 'password':password }
 
-        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+        resp = self.post(url, payload)
         
         print url, payload, resp.text
             
@@ -64,46 +123,6 @@ class Botagraph:
 
         print ("Authentification OK ")
 
-    
-    def post(self, url, payload={}):
-
-        if self.key is None:
-            raise BotLoginError("I miss a valid authentification token")
-
-        url = "%s/%s?token=%s" %(self.host, url , self.key)
-        resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
-        
-        if 401 == resp.status_code:
-            raise BotLoginError('Invalid credentials') 
-
-        elif resp.status_code != 200:
-            raise BotApiError(url, payload, resp)
-
-        return resp
-
-    def get(self, url):
-        url = "%s/%s?token=%s" %(self.host, url , self.key)
-        resp = requests.get(url)
-
-        if 401 == resp.status_code:
-            raise BotLoginError('Invalid credentials') 
-
-        elif resp.status_code != 200:
-            raise BotApiError(url, {}, resp)
-
-        return resp
-
-    def delete(self, url):
-        url = "%s/%s?token=%s" %(self.host, url , self.key)
-        resp = requests.delete(url)
-
-        if 401 == resp.status_code:
-            raise BotLoginError('Invalid credentials') 
-
-        elif resp.status_code != 200:
-            raise BotApiError(url, {}, resp)
-
-        return resp
 
 
     def get_schema(self, gid):
@@ -158,30 +177,9 @@ class Botagraph:
         resp = self.get(url)
         return resp.json()
         
-    def _post_one(self, obj_type, gid, payload):
-        url = "graphs/g/%s/%s" % (gid, obj_type)
-        resp = self.post(url, payload)
-        
-        return resp.json()
-
-    def _post_multi(self, obj_type, gid, objs ):
-        url = "graphs/g/%s/%s" % (gid, obj_type)
-        for chunks in gen_slice(objs, 100):
-            payload = { "%s" % obj_type: chunks }
-            #
-            if self.verbose:
-                print "POST %s, %s " % (url,len(chunks))
-
-            resp = self.post(url, payload)
-
-            data = resp.json()
-            results = { i:uuid for i, uuid in data['results'] }
-
-            for i, obj in enumerate(chunks):
-                yield obj, results.get(i, None) 
-        
     def create_nodetype(self, gid, name, desc,  properties):
         return self.post_nodetype( gid, name, desc,  properties)
+        
 
     def post_nodetype(self, gid, name, desc,  properties):
         payload = { 'name': name,
@@ -209,16 +207,6 @@ class Botagraph:
     def post_edge(self, gid, payload):
         return self._post_one( "edge", gid, payload )
 
-    
-  
-    def delete_edge(self, gid, eid):
-        url = "graphs/g/%s/edge/%s" % (gid, eid)
-        self.delete(url)
-        
-    def delete_node(self, gid, nid):
-        url = "graphs/g/%s/node/%s" % (gid, nid)
-        self.delete(url)
-        
 
     def post_nodes(self, gid, nodes ):
         for v in self._post_multi("nodes", gid, nodes ):
@@ -229,7 +217,16 @@ class Botagraph:
             yield v
 
     
-    def find_nodes(self, gid, nodetype_name, properties, start=0, size=100):
+    def delete_edge(self, gid, eid):
+        url = "graphs/g/%s/edge/%s" % (gid, eid)
+        self.delete(url)
+        
+    def delete_node(self, gid, nid):
+        url = "graphs/g/%s/node/%s" % (gid, nid)
+        self.delete(url)
+
+        
+    def find_nodes(self, gid, nodetype_uuid, properties, start=0, size=100):
         """ iterate nodes of one type , filters on properties matching '==' 
         :param graph: graph name
         :param nodetype_name: nodetype name
@@ -243,7 +240,7 @@ class Botagraph:
         payload = {
                 "start": start,
                 "size" : size,
-                "nodetype" : nodetype_name,
+                "nodetype" : nodetype_uuid,
                 "properties" : properties
         }
         resp = self.post(url, payload)
@@ -252,29 +249,49 @@ class Botagraph:
         for v in data['nodes']:
             yield v
         
-    def find_all_nodes(self, gid, nodetype_name, properties):
+    def find_all_nodes(self, gid, nodetype_uuid, properties, start=0, size=100):
         """
         like find nodes makes a complete iteration of the nodes matching node_type and properties
             :see: find_nodes
         """
-        start=0
-        size=100
+        start =   0 if size < 0 else start
+        size  = 100 if size > 100 else size
+
         while True:
-            nodes = list( self.find_nodes(gid, nodetype_name, properties, start, size))
+            nodes = list( self.find_nodes(gid, nodetype_uuid, properties, start, size))
             if not len(nodes) :
                 break
             start += size
             for node in nodes:
                 yield node
 
-    def get_neighbors(self, gid, node ):
+    def iter_neighbors(self, gid, nodeuuid, start=0, size=100):
         """ return neighbors of a node
         :param graph: graph name  
         :param node: node uuid  
         """
-        url = "graphs/g/%s/node/%s/neighbors" % (gid, node)
-        resp = self.post(url, {})
-        return resp.json()['neighbors']
+        start =   0 if size < 0 else start
+        size  = 100 if size > 100 else size
+
+        url = "graphs/g/%s/node/%s/neighbors" % (gid, nodeuuid)
+
+        while True:
+            payload = {
+                "start": start,
+                "size" : size,
+            }
+
+            resp = self.post(url, payload)
+            neighbors = resp.json()['neighbors']
+
+            for v in neighbors:
+                yield v
+            
+            if not len(neighbors) :
+                break
+
+            start += size
+            
         
     def count_neighbors(self, gid, node ):
         """ Function doc

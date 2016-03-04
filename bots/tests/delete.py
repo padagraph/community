@@ -62,31 +62,50 @@ def main():
           
     nodes = {}
     edges = []
-    for l in ('foo', 'far', 'faz'):
-        print "inserting", l
-        node = bot.post_node(gid, nodedata(l))
-        nodes[l] = node
 
-    for s in nodes.values():
-        for t in nodes.values():
-            src = s['uuid']
-            tgt = t['uuid']
-            if src == tgt:
-                continue
+    INSERT    = True
+    NEIGHBORS = False
+    DELETE    = True
 
-            data ={
-                'edgetype': edgetypes['botrel']['uuid'] ,
-                'source': src,
-                'target': tgt,
-                'properties': {}
-            }
-            
-            print "inserting edge ", s['label'], t['label']
-            edges.append( bot.post_edge(gid, data) )
 
-    for n in nodes.values():
-        print "deleting", n['uuid'], n['label']
-        bot.delete_node(gid, n['uuid'])
+    if INSERT:
+        for l in ('boo', 'bak', 'baz','foo', 'fak', 'faz',):
+            print "inserting", l
+            node = bot.post_node(gid, nodedata(l))
+            nodes[l] = node
+
+        for i, s in enumerate(nodes.values()):
+            for j, t in enumerate(nodes.values()):
+                
+                if i <= j : continue
+
+                src = s['uuid']
+                tgt = t['uuid']
+                data ={
+                    'edgetype': edgetypes['botrel']['uuid'] ,
+                    'source': src,
+                    'target': tgt,
+                    'properties': {}
+                }
+                
+                print "inserting edge ", s['label'], t['label']
+                edges.append( bot.post_edge(gid, data) )
+
+    
+    nodes = bot.find_all_nodes(gid, nodetypes['bottest']['uuid'], {})
+
+    if NEIGHBORS:
+        for n in nodes:
+            print n['properties']['label']
+            for nei in bot.iter_neighbors(gid, n['uuid']):
+                print nei
+
+
+
+    if DELETE:
+        for n in nodes:
+            print "deleting", n['uuid'], n['properties']['label']
+            bot.delete_node(gid, n['uuid'])
 
 if __name__ == '__main__':
     sys.exit(main())
