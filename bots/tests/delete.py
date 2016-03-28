@@ -65,7 +65,7 @@ def main():
 
     INSERT    = True
     NEIGHBORS = False
-    DELETE    = True
+    DELETE    = False
 
 
     if INSERT:

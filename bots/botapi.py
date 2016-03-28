@@ -53,16 +53,17 @@ class Botagraph:
         if self.key is None:
             raise BotLoginError("I miss a valid authentification token")
 
-        url = "%s/%s?token=%s" %(self.host, url , self.key)
+        url = "%s/%s" %(self.host, url)
+        headers = {"Authorization" : self.key}
 
         if method == "GET":
-            resp = requests.get(url)
+            resp = requests.get(url, headers=headers)
         if method == "DELETE":
-            resp = requests.delete(url)
+            resp = requests.delete(url, headers=headers)
         if method == "POST":
-            resp = requests.post(url, data=json.dumps(payload), headers=self.headers)
+            resp = requests.post(url, json=payload, headers=headers)
         if method == "PUT":
-            resp = requests.put(url, data=json.dumps(payload), headers=self.headers)
+            resp = requests.put(url, data=payload, headers=headers)
         
         if 401 == resp.status_code:
             raise BotLoginError('Invalid credentials') 
@@ -151,12 +152,6 @@ class Botagraph:
 
     def create_graph(self, gid, props):
 
-        payload = {
-                    "description": "",
-                    "tags": [],
-                    "image": "",
-         }
-        
         url = "graphs/create"
         payload = { "name": gid,
                     "description": props.get('description', ""),
