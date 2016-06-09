@@ -65,7 +65,8 @@ def main():
     parser.add_argument("--infos", action='store_true', help="prints graph infos and exit" )
     
 
-    parser.add_argument("--cut", action='store', help="cut threathold. 0 no cut ", default=0)
+    parser.add_argument("--cut", action='store', help="cut threathold. 0 ignored ", default=0)
+    parser.add_argument("--gl", action='store', help="prox global threathold. 0  ignored ", default=0)
     parser.add_argument("--seed", action='store_true', help="seeds make beautiful flowers " )
     parser.add_argument("--wait", action='store_true', help="confirm node/edges importation " )
     parser.add_argument("--pause", action='store', help="pause time in ms between insert ", default=0, type=int )
@@ -89,17 +90,26 @@ def main():
     print "\n * Reading %s" % args.path
     
     graph = igraph.read(args.path)
-    vs = list( (v.index, v.degree() ) for v in  graph.vs )
 
     # subgraph
     if args.cut > 0:
+        print " ** cut %s based on degree()" % args.cut
         # cut method based on degree
         n = int(args.cut)
-        print " ** cut %s" % args.cut
+        vs = list( (v.index, v.degree() ) for v in  graph.vs )
         vs = sorted( vs, key=lambda x: x[1], reverse = True )
         vs = vs[:n]
-        
         graph = graph.subgraph( [  v[0] for v in vs ] )
+        
+    elif args.gl > 0:
+        from cello.graphs.prox import prox_markov_dict, sortcut, ALL
+        n = int(args.gl)
+        extract = prox_markov_dict(graph, range(graph.vcount()), 80, add_loops=True)
+        vs =  [ i for i,v in sortcut(extract,n)]
+        print "vs", vs
+        graph = graph.subgraph( vs )
+        
+         
 
     print graph.summary()
     graph.es['a'] = [ 1 for i in xrange(graph.vcount() ) ]
