@@ -12,6 +12,7 @@
   <body>
 
     <script>
+        var domain = "http://localhost:5000";
         var url = location.href;
 
         function gup( name, val ) {
@@ -45,7 +46,7 @@
         body.style.backgroundColor = "#"+ color ;         
         body.innerHTML = [
             "<div style="+style+">",
-            " <iframe width='100%' height='100%' src='http://localhost:5000/embed/"+graph+"?"+params+"'></iframe>",
+            " <iframe width='100%' height='100%' src='"+domain+"/embed/"+graph+"?"+params+"'></iframe>",
             "</div>"].join('')
       </script>
   </body>
