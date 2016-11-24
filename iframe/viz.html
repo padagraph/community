@@ -1,0 +1,52 @@
+
+
+<!DOCTYPE html(lang='en')>
+<html>
+  <head>
+      <style>
+        body { margin:auto;
+             }
+        iframe { border:0px }
+      </style>
+  </head>
+  <body>
+
+    <script>
+        var url = location.href;
+
+        function gup( name, val ) {
+            if (!val) val = "";
+            name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+            var regexS = "[\\?&]"+name+"=([^&#]*)";
+            var regex = new RegExp( regexS );
+            var results = regex.exec( url );
+            return results == null ? val : results[1];
+        }
+
+        var graph = gup("graph", "strains");
+        var color = gup("color", "123123");
+        var width = gup("width", 600);
+        var height = gup("height", 600);
+        
+        var params = [
+            "color=" + color , 
+            "width=" + width , 
+            "height=" + height
+        ].join("&");
+        
+        var style = [
+            "background-color:#" + color , 
+            "width:" + width + "px" , 
+            "height:" + height + "px",
+            "margin:auto"
+        ].join(";");
+        
+        var body = document.getElementsByTagName('body')[0]
+        body.style.backgroundColor = "#"+ color ;         
+        body.innerHTML = [
+            "<div style="+style+">",
+            " <iframe width='100%' height='100%' src='http://localhost:5000/embed/"+graph+"?"+params+"'></iframe>",
+            "</div>"].join('')
+      </script>
+  </body>
+      
