@@ -1,11 +1,12 @@
 
+![The correlates of war project](http://www.correlatesofwar.org/data-sets/formal-alliances/logoTitle.png)
+
 # Formal Alliances (v4.1)
 
 This data set records all formal alliances among states between 1816 and 2012, including mutual defense pacts, non-aggression treaties, and ententes. This data set is hosted by Douglas Gibler, University of Alabama.
 Formal Alliances (v4.1)
 
 * [The Correlates of war project ](http://www.correlatesofwar.org/data-sets/formal-alliances)
-* [download dataset](http://www.correlatesofwar.org/data-sets/formal-alliances/alliances-data-csv-zip)
 
 ## Code
 
@@ -13,7 +14,11 @@ Formal Alliances (v4.1)
 
 ## Run
 
-```python botalliances.py --key ../../../devs/key.txt --path version4.1_csv/alliance_v4.1_by_directed.csv   --gid fa ```
+* [download](http://www.correlatesofwar.org/data-sets/formal-alliances/alliances-data-csv-zip) & extract dataset
+* == TODO == setup virtualenv 
+* Run 
+Something like:  
+```$ python botalliances.py --key ../../../devs/key.txt --path version4.1_csv/alliance_v4.1_by_directed.csv   --gid fa ```
 
 ## Citation
  
