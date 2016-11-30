@@ -1,5 +1,4 @@
 
-![The correlates of war project](http://www.correlatesofwar.org/data-sets/formal-alliances/logoTitle.png)
 
 # Formal Alliances (v4.1)
 
@@ -7,18 +6,6 @@ This data set records all formal alliances among states between 1816 and 2012, i
 Formal Alliances (v4.1)
 
 * [The Correlates of war project ](http://www.correlatesofwar.org/data-sets/formal-alliances)
-
-## Code
-
-[Code is available](https://github.com/padagraph/community/tree/master/bots/CorrelatesofWar) under the GNU GPL [LICENCE](https://raw.githubusercontent.com/padagraph/community/master/bots/CorrelatesofWar/LICENCE)
-
-## Run
-
-* [download](http://www.correlatesofwar.org/data-sets/formal-alliances/alliances-data-csv-zip) & extract dataset
-* == TODO == setup virtualenv 
-* Run 
-Something like:  
-```$ python botalliances.py --key ../../../devs/key.txt --path version4.1_csv/alliance_v4.1_by_directed.csv   --gid fa ```
 
 ## Citation
  
@@ -32,3 +19,15 @@ The data were extended in:
 ``Small, Melvin, and J. David Singer. 1969. "Formal Alliances, 1815-1965: An Extension of the Basic Data." Journal of Peace Research 6:257-282.``
 
 [www.correlatesofwar.org](http://www.correlatesofwar.org/data-sets/formal-alliances)
+
+## Code
+
+[Code is available](https://github.com/padagraph/community/tree/master/bots/CorrelatesofWar) under the GNU GPL [LICENCE](https://raw.githubusercontent.com/padagraph/community/master/bots/CorrelatesofWar/LICENCE)
+
+## Run
+
+* [download](http://www.correlatesofwar.org/data-sets/formal-alliances/alliances-data-csv-zip) & extract dataset
+* == TODO == setup virtualenv 
+* Run 
+Something like:  
+```$ python botalliances.py --key ../../../devs/key.txt --path version4.1_csv/alliance_v4.1_by_directed.csv   --gid fa ```
