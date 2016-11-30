@@ -15,31 +15,12 @@ parse and insert
 
 
 g_attrs = {
-'description':
-""" ***
-    # Formal Alliances (v4.1)
-
-    This data set records all formal alliances among states between 1816 and 2012, including mutual defense pacts, non-aggression treaties, and ententes. This data set is hosted by Douglas Gibler, University of Alabama.
-    Formal Alliances (v4.1)
-
-    http://www.correlatesofwar.org/data-sets/formal-alliances
-
-    ## Citation
-     
-    In any papers or publications that utilize this data set, users are asked to give the version number and cite the article of record for the data set, as follows:
-    Gibler, Douglas M. 2009. International military alliances, 1648-2008. CQ Press.  
-
-    The original alliance data set was assembled in the 1960s under the auspices of the COW project and was initially discussed in:
-    Singer, J. David, and Melvin Small. 1966. "Formal Alliances, 1815-1939." Journal of Peace Research 3:1-31.
-
-    The data were extended in:
-    Small, Melvin, and J. David Singer. 1969. "Formal Alliances, 1815-1965: An Extension of the Basic Data." Journal of Peace Research 6:257-282.
-
-    """.replace("    ", ""),
-    
-  'image': "",
+  'description':open("./readme.md").read().replace("    ", ""),
+  'image': "http://www.correlatesofwar.org/logo.png",
   'tags': ['correlatesofwar', 'war', 'alliance', "defense","pacts","treaties", "ententes"]
 }
+
+print g_attrs['description']
 
 def Graph(gid=""):
     N = namedtuple('Graph', ['gid', 'vs', 'es',  'attrs'])
@@ -60,18 +41,19 @@ def main():
     
     args = parser.parse_args()
     
-    # Bot creation & login 
+    # Bot creation & login
+    key = open(args.key, 'r').read().strip()
     print "\n * Connecting to %s \n  " % args.host 
-    bot = Botagraph(args.host, args.key)
-
-    if args.username and args.password:
-        bot.authenticate(args.username, args.password)
+    bot = Botagraph(args.host, key)
 
     # read / parse graph
     print "\n * Reading %s" % args.path
     g = Graph(args.gid)
     gid = g.gid
-        
+
+    if bot.has_graph(gid)  :
+        bot.delete_graph(gid)
+    
     if not bot.has_graph(gid) :
         print "\n * Create graph %s" % gid
         bot.create_graph(gid, g.attrs )
@@ -85,6 +67,7 @@ def main():
         print "\n * Creating edge type %s" % "alliance"
         props = {
                   'id' : Numeric(),
+                  'label' : Text(),
                   'starts' : Text(),
                   'ends'  : Text(),
                   'defense' : Numeric(),
@@ -104,6 +87,7 @@ def main():
         reader = csv.reader(csvfile, delimiter=',', quotechar='"')
         for i, row in enumerate(reader):
             # undirected
+            if i == 0: continue
             if i % 2 != 0: continue
             
             node  = lambda x : {
@@ -119,10 +103,13 @@ def main():
 
             left_censor, right_censor = row[11:13]
 
-            es = dict(zip("defense neutrality nonaggression entente".split(),row[13:17]))
+            alliances = "defense neutrality nonaggression entente".split()
+            es = dict(zip(alliances,row[13:17]))
             es['starts'] = "/".join(row[5:8])
             es['ends'] = "/".join(row[8:11])
             es['id'] = row[0]
+            es['label'] = " ".join([ a for a in alliances if es[a] in ( 1, "1") ])
+            
             es.update()
 
 
@@ -132,10 +119,14 @@ def main():
                 'target': row[3],
                 'properties': es
             }
+
+        print len(g.vs),  len(g.es)
             
     idx = {}
     for node, uuid in bot.post_nodes( gid, g.vs.itervalues() ):
         idx[ node['properties']['code']] =  uuid
+
+    bot.star_nodes(gid, idx.values())
         
     print "%s nodes inserted . " % (len(idx))
 
