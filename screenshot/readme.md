@@ -8,10 +8,15 @@
 
 ## Usage  
         
-    # start geckodriver   
+### start geckodriver   
+   
     $ ./geckodriver
-    
-    # url pointing to presentation ex: http://padagraph.io/presentation/strains
+
+### capture
+
+    # url pointing to presentation template
+    # ex: http://padagraph.io/presentation/strains
     $ python screenshot.py url
+
 
 Open image ```crop.png```
