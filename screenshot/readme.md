@@ -1,8 +1,8 @@
 
 
-*  *screenshot tool for the presentation template*
-
-Use ```chromium``` through ```selenium``` & ```phantomjs```
+*  *Screenshot tool for the presentation template*
+*  Saves image in png format.
+*  Use ```chromium``` through ```selenium``` for ```python``` & ```phantomjs```
 
 ## Installation
 
