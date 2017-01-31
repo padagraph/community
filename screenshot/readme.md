@@ -7,6 +7,10 @@
 ## Installation
 
     $ make install
+    
+    # add drivers to ```$PATH```
+    # 'ChromeDriver executable needs to be available in the path.
+    $ export PATH=$PATH:./
 
 ## Usage  
         
@@ -29,5 +33,6 @@ Open image ```crop.png```
 * add argparser
 * add image size option 
 * Select webdriver ( Phantomjs, gecko, chrome)
+* script gviz for zoom selection, rotation  
 
 PR welcome 
