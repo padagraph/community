@@ -1,6 +1,6 @@
 
 
-#  screenshot tool for the presentation template
+*  *screenshot tool for the presentation template*
 
 ## Installation
 
