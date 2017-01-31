@@ -2,6 +2,8 @@
 
 *  *screenshot tool for the presentation template*
 
+Use ```chromium``` through ```selenium``` & ```phantomjs```
+
 ## Installation
 
     $ make install
