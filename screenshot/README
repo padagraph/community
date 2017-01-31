@@ -1,1 +1,9 @@
-https://github.com/mozilla/geckodriver/releases/tag/v0.13.0
+
+
+# Installation
+
+    $ make install
+
+# usage
+
+    $ python screenshot.py ```url```

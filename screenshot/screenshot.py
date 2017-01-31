@@ -1,4 +1,7 @@
 import sys
+import time
+import timeit
+
 from PIL import Image
 
 from selenium import webdriver
@@ -8,14 +11,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-#browser = webdriver.Firefox()
-#browser.get('http://seleniumhq.org/')
-#browser.quit()
 
 def getScreenShot(driver, url):
     # http://stackoverflow.com/a/15870708
-    import time
-    import timeit
 
     try:
         print "requesting", timeit.default_timer()
@@ -63,12 +61,6 @@ def getScreenShot(driver, url):
         right = location['x'] + size['width'] + 10
         bottom = location['y'] + size['height'] + 42
 
-        #left = 40
-        #top = 40
-        #right = 400
-        #bottom = 400
-        
-
         left, top, right, bottom = [ int(v) for v in  (left, top, right, bottom) ]
         
 
@@ -87,8 +79,8 @@ def getScreenShot(driver, url):
 
 
 usage= """
-    screenshot tool:
-    usage
+    screenshot tool for the presentation template:
+    usage :
     python screenshot.py 'http://localhost:5000/presentation/strains'
 """
     
@@ -98,6 +90,7 @@ def main():
     if len(sys.argv) == 2:
         url = sys.argv[1]
         #driver = webdriver.PhantomJS("./phantomjs-2.1.1-linux-x86_64/bin/phantomjs")
+        #driver = webdriver.Firefox()
         driver = webdriver.Chrome("chromedriver")
         getScreenShot(driver, url)
 
