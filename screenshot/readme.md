@@ -6,7 +6,11 @@
 
     $ make install
 
-## Usage
+## Usage  
+        
+    # start geckodriver   
+    $ ./geckodriver
+    
     # url pointing to presentation ex: http://padagraph.io/presentation/strains
     $ python screenshot.py url
 
