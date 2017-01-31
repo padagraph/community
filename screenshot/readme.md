@@ -1,7 +1,7 @@
 
 
-*  *Screenshot tool for the presentation template*
-*  Saves image in png format.
+*  *Screenshot tool for the ```presentation``` template*
+*  Saves image in ```png``` format.
 *  Use ```chromium``` through ```selenium``` for ```python``` & ```phantomjs```
 
 ## Installation
@@ -22,3 +22,12 @@
 
 
 Open image ```crop.png```
+
+
+## Todo
+
+* add argparser
+* add image size option 
+* Select webdriver ( Phantomjs, gecko, chrome)
+
+PR welcome 
