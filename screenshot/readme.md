@@ -18,7 +18,7 @@
 
     # url pointing to presentation template
     # ex: http://padagraph.io/presentation/strains
-    $ python screenshot.py url
+    $ python screenshot.py url crop.png
 
 
 Open image ```crop.png```
