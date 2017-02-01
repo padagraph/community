@@ -19,6 +19,8 @@ def getScreenShot(driver, args):
     params = {
         'zoom' : args.zoom,
         'color' : args.color,
+        'buttons': 0, # removes play/vote buttons 
+        'labels': 0 if args.no_labels else 1,  # removes grno_labelaph name/attributes 
     }
 
     querystr = "&".join(["%s=%s" % (k,v) for k,v in params.iteritems()])
@@ -85,6 +87,7 @@ def main():
     parser.add_argument("--height" , action='store', help="height", type=int, default=400)
     parser.add_argument("--color" , action='store', default="12AAAA")
     parser.add_argument("--zoom" , action='store', type=int, default=1200)
+    parser.add_argument("--no-labels" , action='store_true', default=False)
 
     parser.add_argument("-d" , action='store', help="webdriver",  choices=('chromedriver', 'geckodriver', 'ghostdriver'), default='chromedriver')
     
