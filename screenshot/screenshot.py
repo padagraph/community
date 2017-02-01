@@ -81,7 +81,7 @@ def main():
     parser = argparse.ArgumentParser()
     
     parser.add_argument("graph", action='store', help="graphname", default=None)
-    parser.add_argument("-o" , action='store', help="output image", dest='path', default='crop.png')
+    parser.add_argument("path" , action='store', help="output image", default='crop.png')
 
     parser.add_argument("--width" , action='store', help="width", type=int, default=400)
     parser.add_argument("--height" , action='store', help="height", type=int, default=400)
