@@ -14,9 +14,11 @@
 
 ## Usage  
         
-### start geckodriver   
+### start geckodriver, chromiumdriver or phantomjs   
    
     $ ./geckodriver
+    # or
+    $ ./chromedriver
 
 ### capture
 
