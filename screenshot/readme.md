@@ -28,9 +28,7 @@
 
 ### capture
 
-    # url pointing to presentation template
-    # ex: http://padagraph.io/presentation/strains
-    $ python screenshot.py strains crop.png --host http://localhost:5000 -t iframe --width 600 --height 600 --zoom 600  
+    $ python screenshot.py strains crop.png --host http://localhost:5000 --width 600 --height 600 --zoom 600  
 
 Open image ```crop.png```
 

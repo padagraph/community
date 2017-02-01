@@ -92,7 +92,7 @@ def main():
     parser.add_argument("-d" , action='store', help="webdriver",  choices=('chromedriver', 'geckodriver', 'ghostdriver'), default='chromedriver')
     
     parser.add_argument("--host" , action='store', help="host", default="http://padagraph.io")
-    parser.add_argument("-t" , action='store', help="template", dest="template",  choices=('presentation', 'iframe'), default='presentation')
+    parser.add_argument("-t" , action='store', help="template", dest="template",  choices=('presentation', 'iframe'), default='iframe')
     
     # todo
     parser.add_argument("--background" , action='store', help="background", default='#12AAAA')
