@@ -1,6 +1,7 @@
 
 
-*  *Screenshot tool for the ```presentation``` template*
+##  Screenshot tool for padagraph iframe
+
 *  Select webdriver ( Phantomjs, gecko, chrome)
 *  Use ```chromium``` through ```selenium``` for ```python``` & ```phantomjs```
 *  Saves image in ```png``` format.
