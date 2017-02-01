@@ -1,8 +1,13 @@
 
 
 *  *Screenshot tool for the ```presentation``` template*
-*  Saves image in ```png``` format.
+*  Select webdriver ( Phantomjs, gecko, chrome)
 *  Use ```chromium``` through ```selenium``` for ```python``` & ```phantomjs```
+*  Saves image in ```png``` format.
+*  different templates 
+*  image size 
+*  initial position z
+*  labels & buttons visibility 
 
 ## Installation
 
@@ -24,16 +29,13 @@
 
     # url pointing to presentation template
     # ex: http://padagraph.io/presentation/strains
-    $ python screenshot.py strains --host http://localhost:5000 -t iframe -o crop.png --width 600 --height 600 --zoom 600  
+    $ python screenshot.py strains crop.png --host http://localhost:5000 -t iframe --width 600 --height 600 --zoom 600  
 
 Open image ```crop.png```
 
 
 ## Todo
 
-* add argparser
-* add image size option 
-* Select webdriver ( Phantomjs, gecko, chrome)
 * script gviz for zoom selection, rotation  
 
 PR welcome 
