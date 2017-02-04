@@ -101,7 +101,7 @@ def main():
     parser.add_argument("--no-edges" , action='store_true', default=False)
     parser.add_argument("--no-images" , action='store_true', default=False)
 
-    parser.add_argument("-d" , action='store', help="webdriver",  choices=('chromedriver', 'geckodriver', 'ghostdriver'), default='chromedriver')
+    parser.add_argument("-d" , action='store', dest="driver", help="webdriver",  choices=('chromedriver', 'geckodriver', 'phantomjs'), default='chromedriver')
     
     parser.add_argument("--wait" , action='store', help="seconds to wait for layouts and vertex images to load", default=3., type=float)
     parser.add_argument("--host" , action='store', help="host", default="http://padagraph.io")
@@ -112,10 +112,14 @@ def main():
 
     args = parser.parse_args()
 
-    
-    #driver = webdriver.PhantomJS("./phantomjs-2.1.1-linux-x86_64/bin/phantomjs")
-    #driver = webdriver.Firefox()
-    driver = webdriver.Chrome("chromedriver")
+    if args.driver == "phantomjs":
+        driver = webdriver.PhantomJS("./phantomjs")
+    elif args.driver == "geckodriver":
+        driver = webdriver.Firefox()
+    elif args.driver == "chromedriver":
+        driver = webdriver.Chrome("chromedriver")
+
+    #driver = webdriver.Chrome("chromedriver")
     
     getScreenShot(driver, args)
 
