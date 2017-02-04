@@ -146,7 +146,7 @@ def main():
     parser.add_argument("name" , action='store', help="graph name", default=None)
     parser.add_argument("path" , action='store', help="path  txt file to parse ", default=None)
 
-    parser.add_argument("--host", action='store', help="host", default="http://localhost:5000")
+    parser.add_argument("--host", action='store', help="host", default="http://padagraph.io")
     parser.add_argument("--key" , action='store', help="authentification token", default=None)
     parser.add_argument("--delete" , action='store_true', help="delete graph", default=False)
 
