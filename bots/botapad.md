@@ -38,9 +38,14 @@ We just defined a `Person` nodetype with `properties`.
 `image` is used by padagraph to render nodes in graph.
 
 The first column will also be an `indexed column` to describe node relations later with `Edges`.
-you can now use `num` in `Relations` for shorthand and pad maintenance and uniqness. 
 
     @ Person: num; label; image 
+
+Indexed columns can also be specified with an extra '!'
+
+    @ Person: !num; label; image 
+
+you can use `num` values  for `Relations` for shorthand and pad maintenance and uniqness. 
 
 Next row is expecting data from this table.
 Begining and ending space will be removed in each cell.    
@@ -70,13 +75,35 @@ and the data we use the indexed culumn `num` to identify the nodes:
     
 !!!! Warning you have to keep your uniq ids for the whole data !!!! 
 
-## Usage
+### Projection
 
-    $ python graphname url_or_path --key key 
+Sometimes you want to use a property of the row as a Node with a link to the row  
+Considere a list of politicians
+
+    @Politic: %Chamber; !FirstName; !LastName; %Party; %State; %Stance; Statement;
+
+    Senator,Lisa,Murkowski,R,AK,Neutral,"All weekend long my staff and I have been monitoring ..."
+    Senator,Dan,Sullivan,R,AK,Support,"Excerpt -  The temporary restrictions, which I support,  ..."
+
+we ll get a graph with 7 nodes from 5 types
+2 'Politics', 1 'Chamber' (Senator), 1 'State' (AK) , 1 'Party' (R) , 2 'Stance' ...
+and 8 edges.
+    Politic -- Chamber (2) 
+    Politic -- State   (2)
+    Politic -- Party   (2)
+    Politic -- Stance  (2) 
+
+## Usage
+    # see help :
+    $ python botapad.py --help
 
     # exemple with framapad
-    $ python botapad.py fillon https://mensuel.framapad.org/p/qzpH0qxHkM/export/txt --key `cat padagraph.key` -v
+    # edge graph
+    $ python botapad.py fillon https://mensuel.framapad.org/p/qzpH0qxHkM/export/txt  --key `cat ../../key.txt` --separator ';'
 
+    # projected graph
+    $ python botapad.py uspol https://mensuel.framapad.org/p/uspol/export/txt  --key `cat ../../key.txt` --separator ','
+    
 ## Combine
 
     Combine import and screenshots
@@ -85,3 +112,8 @@ and the data we use the indexed culumn `num` to identify the nodes:
     && python screenshot.py testcsv fin.png  --width 600 --height 600 --zoom 1000 --no-labels --vertex-size 1 --wait 4 --host http://localhost:5000 -d chromedriver \
     && feh fillon.png
 
+## TODO
+
+* nodetype shapes
+* starred projected node
+* 
