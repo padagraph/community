@@ -5,6 +5,7 @@ import argparse
 from botapi import Botagraph, BotApiError
 from reliure.types import Text 
 
+from collections import namedtuple
 import codecs
 import requests
 import re
@@ -42,10 +43,34 @@ def csv_rows(lines, start_col=None, end_col=None, separator=";"):
     rows = [ r for r in rows if len(r)]
     
     return rows
+
+# TODO
+def convert_url(url):
+    """ complete url if needed
+        framapad expension  auto add /export/txt
+
+     """
+     
+    re_frama = "https?:\/\/([a-z]+)\.framapad.org/p/([a-z]+)/?([export\/txt]+)?"
+    for _re in ( re_frama, ) :
+        frama = re.findall(_re, url)
+        debug( "convert_url", url , frama,_re )
+        if  len(frama) :
+            frama = [r for r in frama[0] if len(r)]
+            if  len(frama) == 2 :
+                url = "https://%s.framapad.org/p/%s/export/txt" % (frama[0], frama[1])
+                break
+        
+    return url
+
+
+def Prop(name, ptype ,isref, isindex,  isproj):
+    P = namedtuple('Prop', ['name', 'type' ,'isref', 'isindex',  'isproj'])
+    return P(name, ptype ,isref, isindex,  isproj)
     
 class Botapad(object):
     
-    def __init__(self, host, key, gid, path, delete=False, separator='auto', start_col=None, end_col=None):
+    def __init__(self, host, key, gid, delete=False, separator='auto', start_col=None, end_col=None):
         """ Function doc
         :param : 
         """
@@ -53,22 +78,25 @@ class Botapad(object):
         # Bot creation & login 
         log( "\n * Connecting to graph %s @ %s \n  " % (gid, host) )
         
-        bot = Botagraph(host, key)
-
-        self.bot = bot
-        self.path = path
         self.gid = gid
 
         self.separator = separator
         self.start_col = 0 if start_col is None else start_col
         self.end_col = end_col
 
+        self.imports = set()
+
         self.idx = {}
         self.edgetypes = {}
         self.nodetypes = {}
         self.starred = set() # starred nodes
 
+        self.node_headers = {}
+        self.edge_headers = {}
+        
         self.projectors = []
+
+        bot = Botagraph(host, key)
 
         if bot.has_graph(gid) and delete:
             log( " * deleting graph %s" % gid )
@@ -81,17 +109,26 @@ class Botapad(object):
                                     'tags': []
                                   }
                             )
-        
-    def read(self):
-        
-        if self.path[0:4] == 'http':
 
-            log( " * Downloading %s \n" % self.path)
-            content = requests.get(self.path).text
+        schema = bot.get_schema(self.gid)['schema']
+        
+        self.edgetypes = { e['name']:e for e in schema['edgetypes'] }
+        self.nodetypes = { n['name']:n for n in schema['nodetypes'] }
+
+        self.bot = bot
+
+
+    def read(self, path):
+        
+        if path[0:4] == 'http':
+            url = convert_url(path)
+            log( " * Downloading %s \n" % url)
+            content = requests.get(url).text
             lines = content.split('\n')
             
         else:
-            with codecs.open(self.path, 'r', encoding='utf8' ) as fin:
+            log( " * Opening %s \n" % self.path)
+            with codecs.open(path, 'r', encoding='utf8' ) as fin:
                 lines = [ line for line in fin]
 
         lines = [ line.strip() for line in lines ]
@@ -103,54 +140,69 @@ class Botapad(object):
                 if self.separator == '#%space': self.separator =  " "
                 elif self.separator == '#%tab'  : self.separator = "\t"
                 else: self.separator = line[1:]
-        log(" * Reading %s with delimiter '%s'" % (self.path, self.separator))
-        print lines
+
+        log(" * Reading %s with delimiter '%s'" % (path, self.separator))
         return lines
             
-    def parse(self):
+    def parse(self, path):
         """ :param path : txt file path
 
         handles special lines starting with [# @ _]
         for comments, node type, property names
         
         """
-        schema = self.bot.get_schema(self.gid)['schema']
-        self.edgetypes = { e['name']:e for e in schema['edgetypes'] }
-        self.nodetypes = { n['name']:n for n in schema['nodetypes'] }
+        lines = self.read(path)
+        log( "* parsing %s lines with separator '%s'" % (len(lines), self.separator) )
 
         rows = []
         current = () # (VERTEX | EDGE, label, names, index_prop)
-
-        lines = self.read()
-        log( "* parsing %s lines with separator '%s'" % (len(lines), self.separator) )
-        
         for line in lines:
-            
+            #print line
             line = line.strip()
 
-            if line == "" or line[:1] == "#":
+            # ! comment
+            if line == "" or line[:1] == "!":
                 continue
 
-            elif line[:1] in ("@", "_", "$"):
-                if line[:1] in ("@", "_"):
-                    self.post(current, rows)
+            # IMPORT external ressource
+            # & url
+            if line[:1] in "&":
+                
+                url = line[1:].strip()
+                
+                # ::: TODO :::
+                # check url regexp
+                # count import and lines
+                                
+                # circular references
+                if url not in self.imports:
+                    log("=== Importing === %s" % url)
+                    self.parse(url)
+                else :
+                    log ("=== IMPORT === ! circular import ! skipping %s" % url)
+                    
+            # @ Nodetypes, _ Edgetypes
+            elif line[:1] in ("@", "_"):
 
+                self.post(current, rows)
+                
+                # processing directiv
                 cols = re.sub(' ', '', line[1:]) # no space
                 # @Politic: %Chamber; !First Name;!Last Name;%Party;%State;%Stance;Statement;
                 cols = [e for e in re.split("[:;]", "%s" % cols) if len(e)]
                 label = cols[0] # @Something
                 
                 # ( name, indexed, projection )
-                props = [( norm_key(e), "!" in e, "%" in e ) for e in  cols[1:]]
+                props = [ Prop( norm_key(e), Text(), "@" in e, "#" in e, "%" in e ) for e in  cols[1:]]
                 start = self.start_col
                 end = self.end_col if self.end_col > 0 else len(props) 
                 props = props[start: end]
                 
-                names = [ k[0] for k in props ]
-                indexes = [ k[0] for k in props if k[1] ]
-                projs = [ k[0] for k in props if k[2] ]
+                names = [ k.name for k in props ]
+                projs = [ k.name for k in props if k.isproj ]
+                indexes = [ k.name for k in props if k.isindex ]
 
-                typeprops = { k : Text() for k in names }
+                typeprops = { p.name : p.type for p in props }
                     
                 if line[:1] == "@":
                     rows = []
@@ -159,6 +211,7 @@ class Botapad(object):
                     if not label in self.nodetypes:
                         log( "* posting @ %s [%s]" % (label, ", ".join(names)) , indexes, projs)
                         self.nodetypes[label] = self.bot.post_nodetype(self.gid, label, label, typeprops)
+                        self.node_headers[label] = props
                         
                 elif line[:1] == "_":
                     rows = []
@@ -174,14 +227,15 @@ class Botapad(object):
         log( " * Starring %s nodes" % len(list(self.starred)) )
         self.bot.star_nodes(self.gid, [ self.idx[e] for e in self.starred ])
         
+        log( " * [Parse] %s complete" % path )
     
                 
     def post(self, current, lines):
         
-        if not len(lines) or not len(lines): return
+        if not len(lines) or not len(current): return
         
         mode, label, props = current
-        names = [ k[0] for k in props ]
+        names = [ k.name for k in props ]
 
         rows = csv_rows(lines, start_col=self.start_col, end_col=self.end_col, separator=self.separator)
 
@@ -213,7 +267,7 @@ class Botapad(object):
                     }
                     edges.append(payload)
                     
-            log( "posting _ %s %s [%s]" % (len(edges), label , ", ".join(names)))
+            log( "    [POST] EDGE _ %s %s [%s]" % (len(edges), label , ", ".join(names)))
             for e in self.bot.post_edges(self.gid, iter(edges)) : 
                 debug(e)
         
@@ -222,7 +276,7 @@ class Botapad(object):
         if mode == VERTEX:
 
             payload = []
-            index_props = [ e for e,k in enumerate(props) if k[1] ]
+            index_props = [ e for e,k in enumerate(props) if k.isindex ]
             if len(index_props) == 0 : index_props = [0]
             
             for values in rows:
@@ -234,78 +288,97 @@ class Botapad(object):
                     'nodetype': self.nodetypes[label]['uuid'],
                     'properties': dict(zip(names, values))
                   }
+                  
                 if 'label' not in names:
                     key = " ".join([ values[i] for i in index_props ])
                     postdata['properties']['label'] = key
                 
                 payload.append( postdata)
             
-
-                
-            log( "posting @ %s %s" % (len(payload), label) , names, index_props) 
+            # post nodes
+            
+            log( "    [POST] @ %s %s" % (len(payload), label) , names  ,index_props) 
             for node, uuid in self.bot.post_nodes(self.gid, iter(payload)):
-                key = "".join([ node['properties'][names[i]] for i in index_props  ])
+                key = "%s" % ("".join([ node['properties'][names[i]] for i in index_props  ]))
                 self.idx[ key ] = uuid
+                log(key , uuid)
                 debug(node)
 
-            self.apply_projectors(rows , label, props, index_props)
+            self.apply_projectors(rows, label )
+            
 
-    def apply_projectors(self, rows, label, props, index_props  ):
+    def apply_projectors(self, rows, label ):
         """ property projector """
 
-        projs = [p for p in props if p[2]]
+        src = label      #  @ Label 
+        props = self.node_headers[src]
+        projs = [p for p in props if p.isproj]
         names = [ k[0] for k in props ]
-        log( "projectors", projs )
+        log( "    [projectors]", projs )
 
-        for p in projs :
+        for iprop, prop in enumerate(props) :
+
+            if not prop.isproj : continue
             
-            src = label
-            tgt = p[0]
+            #  @ Label: %prop0 , ...
+            tgt = prop.name
+
+            # Distinct column values 
+            values = list( set( [ r[iprop] for r in rows ]) )
             
-            iprop = names.index(tgt)
-            Tgt = list( set( [ r[iprop] for r in rows ]) )
+            log( "\n * [Projector] : %s(%s) -- %s(%s) (%s) %s" %( src , len(rows), tgt, len(values), iprop, values ) )
 
-            log( "\n * Projector: %s(%s) -- %s(%s) (%s) %s" %( src , len(rows), tgt, len(Tgt), iprop, Tgt ) )
+            if tgt not  in self.node_headers:
+                nodeprops = { "label": Text() }
+                self.node_headers[tgt] = [ Prop('label', Text(), False, False, False )]
+                self.nodetypes[tgt] = self.bot.post_nodetype(self.gid, tgt, tgt, nodeprops)
 
-            nodeprops = { "label": Text() }
-            self.nodetypes[tgt] = self.bot.post_nodetype(self.gid, tgt, tgt, nodeprops)
+                payload = []
+            
+                # is this a table ? @ prop0
+                for v in values:
+                    #key = "%s_%s" % ( tgt, v )
+                    key = "%s" % ( v )
 
-            etname = "%s_has_%s" % (src, tgt)
-            self.edgetypes[etname] = self.bot.post_edgetype(self.gid, etname, etname, nodeprops)
+                    if key not in self.idx :
+                        # if values[0][:1] == "*":
+                            #values[0] = values[0][1:]
+                            #starred.add(values[0])
 
-            # create Tgt nodes
-            payload = []
-            for e in Tgt:
-                #if values[0][:1] == "*":
-                    #values[0] = values[0][1:]
-                    #starred.add(values[0])
-                payload.append( {
-                    'nodetype': self.nodetypes[tgt]['uuid'],
-                    'properties': dict(zip(['label'], [e] ))
-                  })
+                        payload.append( {
+                            'nodetype': self.nodetypes[tgt]['uuid'],
+                            'properties': dict(zip(['label'], [v] ))
+                          })
 
-            log( "posting @ %s %s " % (len(payload), tgt ))
-            for node, uuid in self.bot.post_nodes(self.gid, iter(payload)):
-                tgtid = '%s_%s' % (tgt,node['properties']['label'])
-                self.idx[ tgtid ] = uuid
-                log(node)
+                log( "* [Projector] posting @ %s %s " % (len(payload), tgt ))
+                for node, uuid in self.bot.post_nodes(self.gid, iter(payload)):
+                    #tgtid = '%s_%s' % (tgt, node['properties']['label'])
+                    tgtid = '%s' % (node['properties']['label'])
+                    self.idx[ tgtid ] = uuid
+                    log(node)
+
+                
+                
+            etname = "%s_%s" % (src, tgt)
+            if etname not in self.edgetypes:
+                self.edgetypes[etname] = self.bot.post_edgetype(self.gid, etname, etname, nodeprops)
 
             # label -- property edge
             edges = []
-            indexes = [ k[0] for k in props if k[1] ]
-            projs = [ k[0] for k in props if k[2] ]
-            iprop = names.index(tgt) 
+            indexes = [ e for e, k in enumerate(props) if k.isindex ]
+            
             for r in rows:
-                tgtid = '%s_%s' % (tgt,r[iprop])
-                # index id node source (num or col1 or concat!
-                #print "", index_props, [names[i] for i in index_props  ]
-                srcid = "".join([ r[i] for i in index_props  ])
+                st = self.node_headers[label]
+                srcid = "".join([ r[i] for i in indexes  ])
+                tgtid = '%s' % (r[iprop])
+
                 edges.append( {
                     'edgetype': self.edgetypes[etname]['uuid'],
                     'source': self.idx[srcid],
                     'target': self.idx[tgtid],
                     'properties': {"label" : etname}
                 } )
+
             log( "posting _ %s %s " % (len(edges), etname ) )
             #print edges
             for e in self.bot.post_edges(self.gid, iter(edges)) : 
@@ -340,9 +413,10 @@ def main():
     log( "VERBOSE", args.verbose, "DEBUG", args.debug )
 
     if args.host and args.key and args.name and args.path:
-        pad = Botapad(args.host, args.key, args.name, args.path, delete=args.delete,
+        pad = Botapad(args.host, args.key, args.name, delete=args.delete,
                 start_col=args.start_col, end_col=args.end_col, separator=args.separator)
-        pad.parse()
+
+        pad.parse(args.path)
     
     log(" * Visit %s/graph/%s" % ( args.host, args.name) )
     
