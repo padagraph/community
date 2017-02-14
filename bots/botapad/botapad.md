@@ -134,10 +134,7 @@ they can also be used in a different dataset.
 
 * [materials]nodetype materials (shape, color, size) ??  
 
-* [import]circular import
-
-* [import]multiple key with different types in links : Nodetype #id
-
+* [import]circular import @[Nodetype]#id 
 * [import]url expansion with some providers
       [+] navigation for humans between pad, git, cloud ...
       [-] url might be unaccurate with some providers

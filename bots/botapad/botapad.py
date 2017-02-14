@@ -43,6 +43,7 @@ def csv_rows(lines, start_col=None, end_col=None, separator=";"):
     rows = [ r for r in rows if len(r)]
     
     return rows
+    
 
 # TODO
 def convert_url(url):
@@ -51,16 +52,25 @@ def convert_url(url):
 
      """
      
-    re_frama = "https?:\/\/([a-z]+)\.framapad.org/p/([a-z]+)/?([export\/txt]+)?"
-    for _re in ( re_frama, ) :
-        frama = re.findall(_re, url)
-        debug( "convert_url", url , frama,_re )
-        if  len(frama) :
-            frama = [r for r in frama[0] if len(r)]
-            if  len(frama) == 2 :
-                url = "https://%s.framapad.org/p/%s/export/txt" % (frama[0], frama[1])
-                break
-        
+    re_framapad = "https?:\/\/([a-z]+)\.framapad.org/p/([a-z]+)/?([export\/txt]+)?"
+    frama = re.findall(re_framapad, url)
+    if  len(frama) :
+        frama = [r for r in frama[0] if len(r)]
+        if  len(frama) == 2 :
+            url = "https://%s.framapad.org/p/%s/export/txt" % (frama[0], frama[1])
+            return url
+            
+    #https://framacalc.org/uspaties
+    re_framacalc = "https?:\/\/framacalc.org/([a-z]+)([\.csv]+)?"
+    frama = re.findall(re_framacalc, url)
+    debug( "convert_url", url , frama )
+    if  len(frama) :
+        frama = [r for r in frama[0] if len(r)]
+        if  len(frama) == 1 :
+            url = "https://framacalc.org/%s.csv" % (frama[0])
+            return url
+            
+    
     return url
 
 
@@ -70,22 +80,18 @@ def Prop(name, ptype ,isref, isindex,  isproj):
     
 class Botapad(object):
     
-    def __init__(self, host, key, gid, delete=False, separator='auto', start_col=None, end_col=None):
+    def __init__(self, host, key, gid, description, delete=False):
         """ Function doc
         :param : 
         """
         
         # Bot creation & login 
-        log( "\n * Connecting to graph %s @ %s \n  " % (gid, host) )
+        log( "\n * Locating graph %s @ padagraph %s \n  " % (gid, host) )
         
         self.gid = gid
 
-        self.separator = separator
-        self.start_col = 0 if start_col is None else start_col
-        self.end_col = end_col
-
         self.imports = set()
-
+        
         self.idx = {}
         self.edgetypes = {}
         self.nodetypes = {}
@@ -104,9 +110,9 @@ class Botapad(object):
              
         if not bot.has_graph(gid) :
             log( " * Create graph %s" % gid)
-            bot.create_graph(gid, { 'description':"",
+            bot.create_graph(gid, { 'description':description,
                                     'image': "",
-                                    'tags': []
+                                    'tags': ["Botapad"]
                                   }
                             )
 
@@ -118,8 +124,8 @@ class Botapad(object):
         self.bot = bot
 
 
-    def read(self, path):
-        
+    def read(self, path, separator='auto'):
+
         if path[0:4] == 'http':
             url = convert_url(path)
             log( " * Downloading %s \n" % url)
@@ -127,75 +133,79 @@ class Botapad(object):
             lines = content.split('\n')
             
         else:
-            log( " * Opening %s \n" % self.path)
+            log( " * Opening %s \n" % path)
             with codecs.open(path, 'r', encoding='utf8' ) as fin:
                 lines = [ line for line in fin]
 
         lines = [ line.strip() for line in lines ]
         lines = [ line.encode('utf8') for line in lines if len(line)]
         
-        if self.separator == u'auto':
+        if separator == u'auto':
             line = lines[0]
             if line in ( '#;','#,','#%space','#%tab' ):
-                if self.separator == '#%space': self.separator =  " "
-                elif self.separator == '#%tab'  : self.separator = "\t"
-                else: self.separator = line[1:]
+                if   separator == '#%space': separator =  " "
+                elif separator == '#%tab'  : separator = "\t"
+                else: separator = ','
+            else: separator = ','
 
-        log(" * Reading %s with delimiter '%s'" % (path, self.separator))
-        return lines
-            
-    def parse(self, path):
+        log(" * Reading %s (%s) lines with delimiter '%s'" % (path, len(lines), separator))
+        
+        reader = csv.reader(lines, delimiter=separator)
+        rows = [ r for r in reader]
+        #start_col = 0 if start_col is None else start_col
+        #rows = [ r[start_col:end_col] for r in rows]
+        rows = [ r for r in rows if len(r) and not all([ len(e) == 0 for e in r]) ]
+        
+        return rows
+                    
+    def parse(self, path, **kwargs):
         """ :param path : txt file path
 
         handles special lines starting with [# @ _]
         for comments, node type, property names
         
         """
-        lines = self.read(path)
-        log( "* parsing %s lines with separator '%s'" % (len(lines), self.separator) )
 
+        csv = self.read(path, **kwargs)
+        
         rows = []
         current = () # (VERTEX | EDGE, label, names, index_prop)
-        for line in lines:
-            #print line
-            line = line.strip()
-
+        
+        
+        for row in csv:
+            cell = row[0]
             # ! comment
-            if line == "" or line[:1] == "!":
+            if cell[:1] == "!":
                 continue
 
             # IMPORT external ressource
-            # & url
-            if line[:1] in "&":
+            if cell[:1] == "&":
                 
-                url = line[1:].strip()
-                
-                # ::: TODO :::
-                # check url regexp
-                # count import and lines
+                url = cell[1:].strip()
                                 
                 # circular references
                 if url not in self.imports:
-                    log("=== Importing === %s" % url)
+                    log("=== Importing === '%s'" % url)
                     self.parse(url)
                 else :
                     log ("=== IMPORT === ! circular import ! skipping %s" % url)
                     
             # @ Nodetypes, _ Edgetypes
-            elif line[:1] in ("@", "_"):
+            elif cell[:1] in ("@", "_"):
 
                 self.post(current, rows)
                 
                 # processing directiv
+                line = ";".join(row)
                 cols = re.sub(' ', '', line[1:]) # no space
-                # @Politic: %Chamber; !First Name;!Last Name;%Party;%State;%Stance;Statement;
-                cols = [e for e in re.split("[:;]", "%s" % cols) if len(e)]
+                # @Politic: %Chamber; #First Name; #Last Name;%Party;%State;%Stance;Statement;
+                cols = [e for e in re.split("[:;,]" , "%s" % cols) if len(e)]
                 label = cols[0] # @Something
                 
                 # ( name, indexed, projection )
                 props = [ Prop( norm_key(e), Text(), "@" in e, "#" in e, "%" in e ) for e in  cols[1:]]
-                start = self.start_col
-                end = self.end_col if self.end_col > 0 else len(props) 
+                start = 0
+                end   = None
                 props = props[start: end]
                 
                 names = [ k.name for k in props ]
@@ -204,7 +214,7 @@ class Botapad(object):
 
                 typeprops = { p.name : p.type for p in props }
                     
-                if line[:1] == "@":
+                if cell[:1] == "@":
                     rows = []
                     
                     current = (VERTEX, label, props)
@@ -213,31 +223,32 @@ class Botapad(object):
                         self.nodetypes[label] = self.bot.post_nodetype(self.gid, label, label, typeprops)
                         self.node_headers[label] = props
                         
-                elif line[:1] == "_":
+                elif cell[:1] == "_":
                     rows = []
                     current = (EDGE, label, props)
                     if not label in self.edgetypes:                        
                         log( "* posting _ %s [%s]" % (label, ", ".join(names)) )
                         self.edgetypes[label] = self.bot.post_edgetype(self.gid, label, "", typeprops)
             else:
-               rows.append(line)
+               rows.append(row)
 
         self.post( current, rows)
 
         log( " * Starring %s nodes" % len(list(self.starred)) )
         self.bot.star_nodes(self.gid, [ self.idx[e] for e in self.starred ])
+        self.starred = set()
         
         log( " * [Parse] %s complete" % path )
-    
-                
-    def post(self, current, lines):
+        log( self.bot.get_graph(self.gid) , self.imports)
+
+        return path , self.bot.get_graph(self.gid), self.imports
+
+    def post(self, current, rows):
         
-        if not len(lines) or not len(current): return
+        if not len(rows) or not len(current): return
         
         mode, label, props = current
         names = [ k.name for k in props ]
-
-        rows = csv_rows(lines, start_col=self.start_col, end_col=self.end_col, separator=self.separator)
 
         if mode == EDGE:
 
@@ -263,7 +274,7 @@ class Botapad(object):
                         'edgetype': self.edgetypes[label]['uuid'],
                         'source': self.idx[src],
                         'target': self.idx[tgt],
-                        'properties': edgeprops
+                        'properties': edgeprops 
                     }
                     edges.append(payload)
                     
@@ -277,6 +288,8 @@ class Botapad(object):
 
             payload = []
             index_props = [ e for e,k in enumerate(props) if k.isindex ]
+            print index_props
+            
             if len(index_props) == 0 : index_props = [0]
             
             for values in rows:
@@ -328,8 +341,9 @@ class Botapad(object):
             
             log( "\n * [Projector] : %s(%s) -- %s(%s) (%s) %s" %( src , len(rows), tgt, len(values), iprop, values ) )
 
+            nodeprops = { "label": Text() }
+
             if tgt not  in self.node_headers:
-                nodeprops = { "label": Text() }
                 self.node_headers[tgt] = [ Prop('label', Text(), False, False, False )]
                 self.nodetypes[tgt] = self.bot.post_nodetype(self.gid, tgt, tgt, nodeprops)
 
@@ -397,8 +411,8 @@ def main():
     parser.add_argument("--delete" , action='store_true', help="delete graph", default=False)
 
     parser.add_argument("--separator" , action='store', help="csv col separator [;]", default=";")
-    parser.add_argument("--start-col" , action='store', help="", type=int, default=0)
-    parser.add_argument("--end-col" , action='store', help="", type=int, default=None)
+    #parser.add_argument("--start-col" , action='store', help="", type=int, default=0)
+    #parser.add_argument("--end-col" , action='store', help="", type=int, default=None)
     
 
     parser.add_argument("-d", "--debug" , action='store_true', help="", default=False)
@@ -413,12 +427,12 @@ def main():
     log( "VERBOSE", args.verbose, "DEBUG", args.debug )
 
     if args.host and args.key and args.name and args.path:
-        pad = Botapad(args.host, args.key, args.name, delete=args.delete,
-                start_col=args.start_col, end_col=args.end_col, separator=args.separator)
+        description = "imported from %s . " % args.path
+        pad = Botapad(args.host, args.key, args.name, description, delete=args.delete)
 
-        pad.parse(args.path)
+        pprint( pad.parse(args.path, separator=args.separator) )
     
-    log(" * Visit %s/graph/%s" % ( args.host, args.name) )
+    log(" * Visit %s/graph/%s" % ( args.host, args.name, ) )
     
 if __name__ == '__main__':
     sys.exit(main())
