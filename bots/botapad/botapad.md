@@ -1,5 +1,9 @@
 
 # botapad
+    * command line
+    * flask app
+
+# Command Line
 
 * import from file or URL
 * csv like import format
@@ -143,7 +147,7 @@ they can also be used in a different dataset.
         ! is converted during import to  https://mensuel.framapad.org/p/uspol/export/txt  
 
 
-# Botapadapp
+# flask app / Botapadapp
 
 Accessible service for botapad  
 requires ../../screenshot/screenshot.py in `$PYTHONPATH`
