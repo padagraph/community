@@ -130,14 +130,28 @@ they can also be used in a different dataset.
 
 ## TODO
 
-* [star] starred projected node
+* [star] starred projected node  
 
-* [materials]nodetype materials (shape, color, size) ??  
+* [materials]nodetype materials (shape, color, size) ??   
 
-* [import]circular import @[Nodetype]#id 
-* [import]url expansion with some providers
-      [+] navigation for humans between pad, git, cloud ...
-      [-] url might be unaccurate with some providers
+* [import]circular import @[Nodetype]#id  
+* [import]url expansion with some providers  
+      [+] navigation for humans between pad, git, cloud ...  
+      [-] url might be unaccurate with some providers  
       ex : 
-        & https://mensuel.framapad.org/p/uspol
-        ! is converted during import to  https://mensuel.framapad.org/p/uspol/export/txt
+        & https://mensuel.framapad.org/p/uspol  
+        ! is converted during import to  https://mensuel.framapad.org/p/uspol/export/txt  
+
+
+# Botapadapp
+
+Accessible service for botapad  
+requires ../../screenshot/screenshot.py in `$PYTHONPATH`
+
+### Run
+
+Edit variables & run  
+
+    $ python botapadapp.py
+
+    
