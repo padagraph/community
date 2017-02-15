@@ -13,28 +13,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 
 
-def getScreenShot(driver, args):
+def getScreenShot(driver, host, gid, path, width, height, **kwargs):
     # http://stackoverflow.com/a/15870708
-    
-    params = {
-        #template
-        'color' : args.color,
-        'zoom' : args.zoom,
-        'buttons': 0, # removes play/vote buttons
-        'labels': 0 if args.no_labels else 1,  # removes graph name/attributes 
-        # gviz
-        'vtx_size' : args.vertex_size,
-        'show_text': 0 if args.no_text else 1,  # removes vertex text 
-        'show_nodes': 0 if args.no_nodes else 1,  # removes vertex only 
-        'show_edges': 0 if args.no_edges else 1,  # removes edges 
-        'show_images': 0 if args.no_images else 1,  # removes vertex images 
-    }
+    wait = kwargs.pop('wait',1)
 
-    querystr = "&".join(["%s=%s" % (k,v) for k,v in params.iteritems()])
-    url =  "%s/%s/%s?%s#graph" % ( args.host, args.template, args.graph, querystr )
+    querystr = "&".join(["%s=%s" % (k,v) for k,v in kwargs.iteritems()])
+    url =  "%s/iframe/%s?%s#graph" % ( host, gid, querystr )
     
     try:
-        driver.set_window_size(args.width, args.height)
+        driver.set_window_size(width, height)
         print "resize", driver.get_window_size()
         
         print "requesting", url, timeit.default_timer()
@@ -42,8 +29,8 @@ def getScreenShot(driver, args):
         driver.get(url)
         print(driver.title)
         
-        print "waiting", timeit.default_timer(), args.wait, " sec"
-        time.sleep( args.wait)
+        print "waiting", timeit.default_timer(), wait, " sec"
+        time.sleep( wait)
         element = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, "//div[@id='vz_threejs_main']/canvas"))
         )
@@ -52,8 +39,9 @@ def getScreenShot(driver, args):
             lambda x : driver.find_element_by_css_selector( "canvas.pdg-renderer")
         )
 
-        print "writing" , timeit.default_timer()
-        driver.save_screenshot(args.path)
+        print "writing to %s" % path , timeit.default_timer()
+        driver.save_screenshot(path)
+        
         #crop(driver, args.path, args.height, args.width)
 
     except:
@@ -105,7 +93,7 @@ def main():
     
     parser.add_argument("--wait" , action='store', help="seconds to wait for layouts and vertex images to load", default=3., type=float)
     parser.add_argument("--host" , action='store', help="host", default="http://padagraph.io")
-    parser.add_argument("-t" , action='store', help="template", dest="template",  choices=('presentation', 'iframe'), default='iframe')
+    #parser.add_argument("-t" , action='store', help="template", dest="template",  choices=('presentation', 'iframe'), default='iframe')
     
     # todo
     parser.add_argument("--background" , action='store', help="background", default='#12AAAA')
@@ -119,9 +107,21 @@ def main():
     elif args.driver == "chromedriver":
         driver = webdriver.Chrome("chromedriver")
 
-    #driver = webdriver.Chrome("chromedriver")
-    
-    getScreenShot(driver, args)
+    params = {
+        #template
+        'color' : args.color,
+        'zoom' : args.zoom,
+        'buttons': 0, # removes play/vote buttons
+        'labels': 0 if args.no_labels else 1,  # removes graph name/attributes 
+        # gviz
+        'vtx_size' : args.vertex_size,
+        'show_text': 0 if args.no_text else 1,  # removes vertex text 
+        'show_nodes': 0 if args.no_nodes else 1,  # removes vertex only 
+        'show_edges': 0 if args.no_edges else 1,  # removes edges 
+        'show_images': 0 if args.no_images else 1,  # removes vertex images 
+    }
+
+    getScreenShot(driver, args.host, args.graph, args.width, args.height, params)
 
     driver.quit()
 
