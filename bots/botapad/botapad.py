@@ -17,7 +17,7 @@ EDGE = 0
 VERTEX = 1
 
 DEBUG = False
-VERBOSE = False
+VERBOSE = True
 
 
 def log(*args):
@@ -141,11 +141,9 @@ class Botapad(object):
         lines = [ line.encode('utf8') for line in lines if len(line)]
         
         if separator == u'auto':
-            line = lines[0]
-            if line in ( '#;','#,','#%space','#%tab' ):
-                if   separator == '#%space': separator =  " "
-                elif separator == '#%tab'  : separator = "\t"
-                else: separator = ','
+            line = lines[0].strip()
+            if line in ( '!;','!,'):
+                separator = line[1:]
             else: separator = ','
 
         log(" * Reading %s (%s) lines with delimiter '%s'" % (path, len(lines), separator))
@@ -255,6 +253,7 @@ class Botapad(object):
             edges = []
             for row in rows:
                 row = [r.strip() for r in row]
+                print row
                 src, direction, tgt = [ e.strip() for e in re.split("\s+", row[0])]
                 if direction not in DIRECTIONS :
                     raise ValueError('edge direction not in [%s]' % ", ".join(DIRECTIONS))

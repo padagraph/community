@@ -25,8 +25,11 @@ PATH = "./static/images" # images storage
 
 DELETE = True # delete graph before importation
 
-driver = webdriver.Chrome("chromedriver")
+#driver = webdriver.Chrome("chromedriver")
 #driver.quit()
+
+import botapad
+botapad.VERBOSE = True
 
 
 def img_url(gid):
@@ -39,7 +42,7 @@ def graph_url(gid):
 
 @app.route('/more', methods=['GET', 'POST'])
 def more():
-    md = codecs.open('botapad.md', 'r', encoding='utf8').read()
+    md = codecs.open('README.md', 'r', encoding='utf8').read()
     response = make_response(render_template_string(md))
     response.headers['Content-Type'] = "text/plain; charset=utf-8"
     return response
@@ -60,13 +63,36 @@ def image(gid):
     return redirect( img_url(gid) )
     
 
+
+
+@app.route('/test', methods=['GET'])
+def test():
+    gid = "dd"
+    params = {
+            #template
+            'color' : "12AAAA",
+            'zoom'  : 1200,
+            'buttons': 0, # removes play/vote buttons
+            'labels' : 1,  # removes graph name/attributes 
+            # gviz
+            'vtx_size' : 0,
+            'show_text'  : 1 ,     # removes vertex text 
+            'show_nodes' : 1 ,   # removes vertex only 
+            'show_edges' : 1 ,   # removes edges 
+            'show_images': 1 , # removes vertex images 
+        }
+        
+    querystr = "&".join(["%s=%s" % (k,v) for k,v in params.items()])
+    iframe = "%s/iframe/%s?%s#graph" % ( HOST, gid, querystr )
+    return render_template('homepage.html', iframe= iframe, url=graph_url(gid) , img=img_url(gid), complete=True)
+    
 @app.route('/import', methods=['GET'])
 def home():
     return render_template('homepage.html' )
 
 
 @app.route('/import', methods=['POST'])
-@app.route('/botapad', methods=['GET'])
+@app.route('/', methods=['GET'])
 def botimport():
     gid = request.args.get('gid', None)
     url = request.args.get('url', None)
@@ -75,6 +101,8 @@ def botimport():
         gid = request.form.get('gid', None)
         url = request.form.get('url', None)
 
+    complete = False
+    iframe = ""
     if gid and url:
         args = request.args
         params = {
@@ -94,9 +122,15 @@ def botimport():
         }
 
         _import(gid, url)
-        snapshot(gid, **params)
+        complete = True
 
-    return render_template('import.html', url=graph_url(gid) , img=img_url(gid))
+        
+        querystr = "&".join(["%s=%s" % (k,v) for k,v in params.items()])
+        iframe = "%s/iframe/%s?%s#graph" % ( HOST, gid, querystr )
+
+        #snapshot(gid, **params)
+
+    return render_template('homepage.html', iframe= iframe, url=graph_url(gid) , img=img_url(gid), complete=True)
     
 def main():
     ## run the app
